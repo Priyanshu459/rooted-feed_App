@@ -51,6 +51,11 @@ login_manager.login_view = 'index'
 
 db = SQLAlchemy(app)
 
+followers = db.Table('followers',
+    db.Column('follower_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
+)
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
@@ -60,10 +65,42 @@ class User(db.Model, UserMixin):
     bio = db.Column(db.String(250), default='')
     profile_photo_url = db.Column(db.String(200), default='')
     account_tier = db.Column(db.String(20), default='Free')
+    
+    followed = db.relationship(
+        'User', secondary=followers,
+        primaryjoin=(followers.c.follower_id == id),
+        secondaryjoin=(followers.c.followed_id == id),
+        backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+        
+    def is_following(self, user):
+        return self.followed.filter(followers.c.followed_id == user.id).count() > 0
+
+    def follow(self, user):
+        if not self.is_following(user):
+            self.followed.append(user)
+
+    def unfollow(self, user):
+        if self.is_following(user):
+            self.followed.remove(user)
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+class Conversation(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user1_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user2_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    updated_at = db.Column(db.Integer)
+    messages = db.relationship('Message', backref='conversation', lazy='dynamic')
+
+class Message(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    conversation_id = db.Column(db.String(36), db.ForeignKey('conversation.id'))
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    text = db.Column(db.String(1000))
+    timestamp = db.Column(db.Integer)
+    read = db.Column(db.Boolean, default=False)
 
 class Post(db.Model):
     id = db.Column(db.String(50), primary_key=True)
@@ -173,6 +210,162 @@ def upload_file():
         return jsonify({'success': True, 'url': url, 'type': media_type})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/<handle>')
+def get_user_profile(handle):
+    user = User.query.filter_by(handle=handle).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+        
+    is_following = False
+    is_mutual = False
+    if current_user.is_authenticated:
+        is_following = current_user.is_following(user)
+        is_mutual = is_following and user.is_following(current_user)
+        
+    return jsonify({
+        'handle': user.handle,
+        'name': user.display_name,
+        'bio': user.bio,
+        'photo': user.profile_photo_url,
+        'followers_count': user.followers.count(),
+        'following_count': user.followed.count(),
+        'is_following': is_following,
+        'is_mutual': is_mutual,
+        'is_self': current_user.is_authenticated and current_user.id == user.id
+    })
+
+@app.route('/api/posts/following')
+@login_required
+def get_following_posts():
+    followed_ids = [u.id for u in current_user.followed]
+    # Include own posts too
+    followed_ids.append(current_user.id)
+    
+    posts = Post.query.filter(Post.sender.in_([User.query.get(i).handle for i in followed_ids])).order_by(Post.timestamp.desc()).limit(100).all()
+    
+    res = []
+    for p in posts:
+        res.append({
+            'id': p.id,
+            'sender': p.sender,
+            'handle': p.handle,
+            'text': p.text,
+            'mediaUrl': p.media_url,
+            'mediaType': p.media_type,
+            'timestamp': p.timestamp,
+            'likes': p.likes,
+            'bookmarks': p.bookmarks,
+            'replyCount': p.reply_count,
+            'node': p.node,
+            'parentId': p.parent_id,
+            'isRetweet': p.is_retweet,
+            'originalPostId': p.original_post_id
+        })
+    return jsonify(res)
+
+@app.route('/api/follow/<handle>', methods=['POST'])
+@login_required
+def follow_user(handle):
+    user = User.query.filter_by(handle=handle).first()
+    if not user or user == current_user:
+        return jsonify({'error': 'Invalid action'}), 400
+    current_user.follow(user)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/unfollow/<handle>', methods=['POST'])
+@login_required
+def unfollow_user(handle):
+    user = User.query.filter_by(handle=handle).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    current_user.unfollow(user)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/conversations')
+@login_required
+def get_conversations():
+    convs = Conversation.query.filter(
+        (Conversation.user1_id == current_user.id) | (Conversation.user2_id == current_user.id)
+    ).order_by(Conversation.updated_at.desc()).all()
+    res = []
+    for c in convs:
+        other_user = User.query.get(c.user2_id if c.user1_id == current_user.id else c.user1_id)
+        last_msg = c.messages.order_by(Message.timestamp.desc()).first()
+        unread_count = c.messages.filter_by(read=False).filter(Message.sender_id != current_user.id).count()
+        if last_msg:
+            res.append({
+                'id': c.id,
+                'other_user': {'handle': other_user.handle, 'name': other_user.display_name, 'photo': other_user.profile_photo_url},
+                'last_message': last_msg.text,
+                'timestamp': last_msg.timestamp,
+                'unread_count': unread_count
+            })
+    return jsonify(res)
+
+@app.route('/api/messages/<handle>')
+@login_required
+def get_messages(handle):
+    other_user = User.query.filter_by(handle=handle).first()
+    if not other_user: return jsonify({'error': 'Not found'}), 404
+    conv = Conversation.query.filter(
+        ((Conversation.user1_id == current_user.id) & (Conversation.user2_id == other_user.id)) |
+        ((Conversation.user1_id == other_user.id) & (Conversation.user2_id == current_user.id))
+    ).first()
+    if not conv: return jsonify([])
+    
+    unread = conv.messages.filter_by(read=False).filter(Message.sender_id != current_user.id).all()
+    for m in unread: m.read = True
+    if unread: db.session.commit()
+    
+    messages = conv.messages.order_by(Message.timestamp.asc()).all()
+    return jsonify([{
+        'id': m.id, 'sender_id': m.sender_id, 'text': m.text, 'timestamp': m.timestamp, 'is_me': m.sender_id == current_user.id
+    } for m in messages])
+
+from flask_socketio import join_room
+
+@socketio.on('join_chat')
+def join_chat(data):
+    if current_user.is_authenticated:
+        join_room(f"user_{current_user.id}")
+
+@socketio.on('send_message')
+def send_dm(data):
+    if not current_user.is_authenticated: return
+    target_handle, text = data.get('target_handle'), data.get('text')
+    if not target_handle or not text: return
+    target_user = User.query.filter_by(handle=target_handle).first()
+    if not target_user: return
+    
+    # Only mutual followers can DM
+    if not current_user.is_following(target_user) or not target_user.is_following(current_user):
+        emit('message_error', {'error': 'You can only message mutual followers'})
+        return
+        
+    conv = Conversation.query.filter(
+        ((Conversation.user1_id == current_user.id) & (Conversation.user2_id == target_user.id)) |
+        ((Conversation.user1_id == target_user.id) & (Conversation.user2_id == current_user.id))
+    ).first()
+    ts = int(time.time() * 1000)
+    if not conv:
+        conv = Conversation(user1_id=current_user.id, user2_id=target_user.id, updated_at=ts)
+        db.session.add(conv)
+        db.session.commit()
+    msg = Message(conversation_id=conv.id, sender_id=current_user.id, text=text, timestamp=ts)
+    conv.updated_at = ts
+    db.session.add(msg)
+    db.session.commit()
+    
+    payload = {
+        'id': msg.id, 'text': text, 'timestamp': ts, 'conv_id': conv.id,
+        'sender_handle': current_user.handle, 'sender_name': current_user.display_name, 'sender_photo': current_user.profile_photo_url,
+        'target_handle': target_handle
+    }
+    emit('receive_message', payload, room=f"user_{current_user.id}")
+    emit('receive_message', payload, room=f"user_{target_user.id}")
 
 @socketio.on('join')
 def handle_join(user_data):

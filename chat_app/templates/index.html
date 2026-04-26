@@ -223,6 +223,22 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
   .mobile-fab { display: none; }
 }
 
+/* CHAT BUBBLES */
+.chat-bubble { max-width: 75%; padding: 12px 16px; border-radius: 16px; font-size: 15px; line-height: 1.4; word-break: break-word; }
+.chat-bubble.me { background: var(--green3); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.chat-bubble.them { background: #fff; color: var(--earth1); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(139,94,60,0.1); }
+.conv-item { display:flex; gap:16px; padding:16px 24px; border-bottom:1px solid rgba(139,94,60,0.06); cursor:pointer; transition:background 0.2s; align-items:center;}
+.conv-item:hover { background: #FBF7F0; }
+.unread-badge { background: var(--terracotta); color: #fff; font-size: 10px; font-weight: 700; border-radius: 50%; min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; position: absolute; top: 4px; right: 4px; border: 2px solid #fff; }
+
+/* CHAT BUBBLES */
+.chat-bubble { max-width: 75%; padding: 12px 16px; border-radius: 16px; font-size: 15px; line-height: 1.4; word-break: break-word; }
+.chat-bubble.me { background: var(--green3); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.chat-bubble.them { background: #fff; color: var(--earth1); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid rgba(139,94,60,0.1); }
+.conv-item { display:flex; gap:16px; padding:16px 24px; border-bottom:1px solid rgba(139,94,60,0.06); cursor:pointer; transition:background 0.2s; align-items:center;}
+.conv-item:hover { background: #FBF7F0; }
+.unread-badge { background: var(--terracotta); color: #fff; font-size: 10px; font-weight: 700; border-radius: 50%; min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; position: absolute; top: 4px; right: 4px; border: 2px solid #fff; }
+
 /* NOTIF */
 .notif{position:fixed;top:24px;right:24px;z-index:200;background:var(--earth2);color:#F5ECD7;padding:16px 24px;border-radius:16px;font-size:15px;font-weight:500;transform:translateY(-100px);opacity:0;transition:all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);display:flex;align-items:center;gap:12px;box-shadow:0 12px 32px rgba(0,0,0,0.15);}
 .notif.show{transform:translateY(0);opacity:1;}
@@ -252,8 +268,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
       <div class="logo-icon" style="width:40px;height:40px;font-size:20px;border-radius:12px;">🌿</div>
     </div>
     
-    <div class="nav-item active" onclick="switchTab('feed')" title="Home"><span class="nav-icon">🏠</span></div>
+    <div class="nav-item active" onclick="switchTab('feedView')" title="Home"><span class="nav-icon">🏠</span></div>
     <div class="nav-item" onclick="switchTab('explore')" title="Explore Nodes"><span class="nav-icon">🔍</span></div>
+    <div class="nav-item" onclick="openMessages()" title="Messages"><span class="nav-icon">✉️</span><div class="unread-badge" id="navBadge" style="display:none;">0</div></div>
     <div class="nav-item" onclick="switchTab('money')" title="Rooted Money"><span class="nav-icon">💸</span></div>
     <div class="nav-item" onclick="switchTab('jobs')" title="Rooted Jobs"><span class="nav-icon">💼</span></div>
     <div class="nav-item" onclick="switchTab('ai')" title="Rooted AI Assistant"><span class="nav-icon">🤖</span></div>
@@ -278,8 +295,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
     
     <div class="feed-header" style="display:flex; flex-direction:column; align-items:center;">
       <div style="display:flex; justify-content:space-around; width:100%; font-weight:600; font-size:15px; color:var(--stone);">
-        <span style="color:var(--earth1); border-bottom:4px solid var(--green3); padding-bottom:12px; cursor:pointer; flex:1; text-align:center;">For You</span>
-        <span style="cursor:pointer; flex:1; text-align:center; padding-bottom:12px;" onclick="showNotif('Following coming soon!')">Following</span>
+        <span id="tabForYou" style="color:var(--earth1); border-bottom:4px solid var(--green3); padding-bottom:12px; cursor:pointer; flex:1; text-align:center;" onclick="switchFeedTab('ForYou')">For You</span>
+        <span id="tabFollowing" style="cursor:pointer; flex:1; text-align:center; padding-bottom:12px;" onclick="switchFeedTab('Following')">Following</span>
       </div>
     </div>
     
@@ -324,12 +341,58 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
   <div class="main-feed" id="profileView" style="display:none; flex-direction:column;">
     <div class="feed-header" style="display:flex; align-items:center; gap:16px; padding:12px 24px;">
       <div onclick="closeProfile()" style="cursor:pointer; font-size:20px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.2s;" class="icon-btn">&larr;</div>
-      <div>
+      <div style="flex:1;">
         <h2 id="profileViewName" style="margin:0; font-size:20px; font-weight:700; color:var(--earth1);">Profile</h2>
         <div id="profileViewHandle" style="font-size:14px; color:var(--stone);"></div>
       </div>
     </div>
+    
+    <div style="padding:24px; position:relative; border-bottom:1px solid rgba(139,94,60,0.1);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+        <img id="profileViewAvatar" class="mini-avatar" style="width:80px; height:80px; font-size:32px; object-fit:cover;">
+        <div style="display:flex; gap:8px;">
+          <button id="messageBtn" style="padding:8px 16px; border-radius:20px; font-size:14px; display:none; background:none; border:1px solid var(--stone); cursor:pointer;" onclick="startChat()">Message</button>
+          <button class="btn-primary" id="followBtn" style="padding:8px 24px; border-radius:20px; font-size:14px; display:none;" onclick="toggleFollow()">Follow</button>
+        </div>
+      </div>
+      
+      <div id="profileViewBio" style="margin-top:16px; font-size:15px; color:var(--earth1); line-height:1.5;"></div>
+      
+      <div style="display:flex; gap:16px; margin-top:12px; color:var(--stone); font-size:14px;">
+        <div><strong id="profFollowing" style="color:var(--earth1);">0</strong> Following</div>
+        <div><strong id="profFollowers" style="color:var(--earth1);">0</strong> Followers</div>
+      </div>
+    </div>
+    
     <div class="posts-area" id="profilePostsArea"></div>
+  </div>
+
+  <!-- MESSAGES VIEW -->
+  <div class="main-feed" id="messagesView" style="display:none; flex-direction:column; background:#fff;">
+    <div class="feed-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="font-size:20px; font-weight:700;">Messages</h2>
+      <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:24px;">✕</div>
+    </div>
+    <div id="convList" style="flex:1; overflow-y:auto; padding:0;">
+        <!-- conversations load here -->
+    </div>
+  </div>
+
+  <!-- CHAT ROOM VIEW -->
+  <div class="main-feed" id="chatView" style="display:none; flex-direction:column; background:#fff;">
+    <div class="feed-header" style="display:flex; align-items:center; gap:12px; padding:12px 24px;">
+      <div onclick="openMessages()" style="cursor:pointer; color:var(--stone); font-size:24px;">←</div>
+      <img id="chatAvatar" class="mini-avatar" style="width:36px; height:36px; object-fit:cover; display:none;">
+      <div id="chatAvatarText" class="mini-avatar" style="width:36px; height:36px;"></div>
+      <h2 id="chatName" style="font-size:18px; font-weight:600; margin:0; cursor:pointer;"></h2>
+    </div>
+    <div id="chatMessages" style="flex:1; overflow-y:auto; padding:24px; background:var(--cream); display:flex; flex-direction:column; gap:12px;">
+        <!-- messages load here -->
+    </div>
+    <div style="padding:16px 24px; border-top:1px solid rgba(139,94,60,0.1); display:flex; gap:12px; background:#fff;">
+        <input type="text" id="chatInput" placeholder="Start a new message" style="flex:1; padding:12px 20px; border-radius:24px; border:1px solid rgba(139,94,60,0.2); outline:none; font-size:15px;" onkeydown="if(event.key==='Enter') sendDM()">
+        <button class="btn-primary" style="padding:0 24px; border-radius:24px; font-weight:600;" onclick="sendDM()">Send</button>
+    </div>
   </div>
 
   <div class="main-feed mock-view" id="mockView" style="display:none; justify-content:center; align-items:center; text-align:center; padding:48px;">
@@ -550,23 +613,45 @@ function bookmarkPost(postId) {
     showNotif('Saved to your Bookmarks! 🔖 (+10 Score)');
 }
 
+let currentFeedTab = 'ForYou';
+
+function switchFeedTab(tab) {
+    currentFeedTab = tab;
+    document.getElementById('tabForYou').style.borderBottom = tab === 'ForYou' ? '4px solid var(--green3)' : 'none';
+    document.getElementById('tabForYou').style.color = tab === 'ForYou' ? 'var(--earth1)' : 'var(--stone)';
+    document.getElementById('tabFollowing').style.borderBottom = tab === 'Following' ? '4px solid var(--green3)' : 'none';
+    document.getElementById('tabFollowing').style.color = tab === 'Following' ? 'var(--earth1)' : 'var(--stone)';
+    
+    // Clear feed and re-fetch (simulated by re-requesting from server or using cache)
+    document.getElementById('postsArea').innerHTML = '';
+    if(tab === 'ForYou') {
+        socket.emit('join', {});
+    } else {
+        fetch('/api/posts/following')
+        .then(r => r.json())
+        .then(posts => {
+            posts.forEach(p => addPostToFeed(p));
+        });
+    }
+}
+
 function switchTab(tab) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-    event.currentTarget.classList.add('active');
+    if(event && event.currentTarget) event.currentTarget.classList.add('active');
     
-    const feed = document.getElementById('feedView');
-    const mock = document.getElementById('mockView');
-    const profile = document.getElementById('profileView');
+    const views = ['feedView', 'mockView', 'profileView', 'messagesView', 'chatView'];
+    views.forEach(v => {
+        const el = document.getElementById(v);
+        if(el) el.style.display = 'none';
+    });
     
-    profile.style.display = 'none';
+    const target = document.getElementById(tab);
+    if(target) target.style.display = 'flex';
     
-    if(tab === 'feed') {
-        feed.style.display = 'flex';
-        mock.style.display = 'none';
-    } else {
-        feed.style.display = 'none';
-        mock.style.display = 'flex';
-        
+    if(tab === 'feedView') {
+        switchFeedTab(currentFeedTab);
+    } else if(tab === 'explore' || tab === 'money' || tab === 'jobs' || tab === 'ai') {
+        document.getElementById('mockView').style.display = 'flex';
         const title = document.getElementById('mockTitle');
         const icon = document.getElementById('mockIcon');
         if(tab === 'explore') { title.innerText = 'Explore Nodes'; icon.innerText = '🔍'; }
@@ -763,6 +848,181 @@ function showNotif(msg){
   document.getElementById('notif-text').textContent=msg;
   n.classList.add('show');
   setTimeout(()=>n.classList.remove('show'),2800);
+}
+
+// --- FOLLOW SYSTEM ---
+function toggleFollow() {
+    const handle = document.getElementById('profileViewHandle').textContent.replace('@','');
+    const isFollowing = document.getElementById('followBtn').textContent === 'Unfollow';
+    const endpoint = isFollowing ? `/api/unfollow/${handle}` : `/api/follow/${handle}`;
+    
+    fetch(endpoint, {method:'POST'})
+    .then(r => r.json())
+    .then(data => {
+        if(data.success) {
+            document.getElementById('followBtn').textContent = isFollowing ? 'Follow' : 'Unfollow';
+            document.getElementById('followBtn').style.background = isFollowing ? 'var(--green3)' : 'var(--stone)';
+            openProfile(handle, document.getElementById('profileViewName').textContent); // refresh
+        }
+    });
+}
+
+// --- MESSAGES SYSTEM ---
+let currentChatTarget = null;
+
+function openMessages() {
+    switchTab('messagesView');
+    fetchConversations();
+}
+
+function fetchConversations() {
+    fetch('/api/conversations')
+    .then(r => r.json())
+    .then(convs => {
+        const cl = document.getElementById('convList');
+        cl.innerHTML = '';
+        let totalUnread = 0;
+        convs.forEach(c => {
+            totalUnread += c.unread_count;
+            const item = document.createElement('div');
+            item.className = 'conv-item';
+            item.onclick = () => openChat(c.other_user.handle, c.other_user.name, c.other_user.photo);
+            
+            let photoHtml = c.other_user.photo ? `<img src="${c.other_user.photo}" class="mini-avatar" style="object-fit:cover;">` : `<div class="mini-avatar">${c.other_user.name[0].toUpperCase()}</div>`;
+            let unreadHtml = c.unread_count > 0 ? `<div class="unread-badge" style="position:static;">${c.unread_count}</div>` : '';
+            
+            const d = new Date(c.timestamp);
+            const timeStr = d.getHours() + ':' + (d.getMinutes()<10?'0':'') + d.getMinutes();
+            
+            item.innerHTML = `
+                ${photoHtml}
+                <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                        <strong style="color:var(--earth1);">${c.other_user.name}</strong>
+                        <span style="font-size:12px; color:var(--stone);">${timeStr}</span>
+                    </div>
+                    <div style="font-size:14px; color:var(--stone); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">
+                        ${c.last_message}
+                    </div>
+                </div>
+                ${unreadHtml}
+            `;
+            cl.appendChild(item);
+        });
+        
+        const badge = document.getElementById('navBadge');
+        if(totalUnread > 0) { badge.style.display='flex'; badge.textContent=totalUnread; }
+        else badge.style.display='none';
+    });
+}
+
+function openChat(handle, name, photoUrl) {
+    currentChatTarget = handle;
+    switchTab('chatView');
+    
+    document.getElementById('chatName').textContent = name;
+    if(photoUrl) {
+        document.getElementById('chatAvatar').src = photoUrl;
+        document.getElementById('chatAvatar').style.display = 'flex';
+        document.getElementById('chatAvatarText').style.display = 'none';
+    } else {
+        document.getElementById('chatAvatar').style.display = 'none';
+        document.getElementById('chatAvatarText').textContent = name[0].toUpperCase();
+        document.getElementById('chatAvatarText').style.display = 'flex';
+    }
+    
+    fetchMessages(handle);
+}
+
+function fetchMessages(handle) {
+    fetch(`/api/messages/${handle}`)
+    .then(r => r.json())
+    .then(msgs => {
+        const area = document.getElementById('chatMessages');
+        area.innerHTML = '';
+        msgs.forEach(m => appendChatMessage(m));
+        area.scrollTop = area.scrollHeight;
+        fetchConversations(); // clear unread counts
+    });
+}
+
+function appendChatMessage(m) {
+    const area = document.getElementById('chatMessages');
+    const b = document.createElement('div');
+    b.className = `chat-bubble ${m.is_me ? 'me' : 'them'}`;
+    b.textContent = m.text;
+    area.appendChild(b);
+}
+
+function sendDM() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if(!text || !currentChatTarget) return;
+    
+    socket.emit('send_message', { target_handle: currentChatTarget, text: text });
+    input.value = '';
+}
+
+function startChat() {
+    const handle = document.getElementById('profileViewHandle').textContent.replace('@','');
+    const name = document.getElementById('profileViewName').textContent;
+    openChat(handle, name, null); // Will fallback to initials if photo unknown
+}
+
+// Socket handler for DMs
+socket.on('receive_message', function(msg) {
+    const isMe = msg.sender_id === currentUser.id;
+    if(currentChatTarget && ((isMe && msg.target_handle === currentChatTarget) || (!isMe && msg.sender_handle === currentChatTarget))) {
+        appendChatMessage({text: msg.text, is_me: isMe});
+        const area = document.getElementById('chatMessages');
+        area.scrollTop = area.scrollHeight;
+        if(!isMe) fetch(`/api/messages/${msg.sender_handle}`); // Mark read implicitly
+    } else {
+        fetchConversations(); // update badge
+        if(!isMe) showNotif(`New message from ${msg.sender_name}`);
+    }
+});
+
+socket.on('message_error', function(err) {
+    showNotif(err.error);
+});
+
+// Update Profile Open to check follow status
+const originalOpenProfile = openProfile;
+openProfile = function(handle, name) {
+    originalOpenProfile(handle, name); // Does the UI stuff and fetches posts
+    if(currentUser) {
+        fetch(`/api/user/${handle}`)
+        .then(r => r.json())
+        .then(u => {
+            document.getElementById('profFollowers').textContent = u.followers_count;
+            document.getElementById('profFollowing').textContent = u.following_count;
+            
+            const fbtn = document.getElementById('followBtn');
+            const mbtn = document.getElementById('messageBtn');
+            
+            if(!u.is_self) {
+                fbtn.style.display = 'block';
+                fbtn.textContent = u.is_following ? 'Unfollow' : 'Follow';
+                fbtn.style.background = u.is_following ? 'var(--stone)' : 'var(--green3)';
+                
+                if(u.is_mutual) {
+                    mbtn.style.display = 'block';
+                } else {
+                    mbtn.style.display = 'none';
+                }
+            } else {
+                fbtn.style.display = 'none';
+                mbtn.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Check unread badge on load
+if(currentUser) {
+    socket.emit('join_chat', {});
+    fetchConversations();
 }
 </script>
 </body>
