@@ -6,7 +6,9 @@
 <title>Rooted</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css" rel="stylesheet">
 <style>
+/* ... existing styles ... */
 *{margin:0;padding:0;box-sizing:border-box;}
 :root{
   --earth1:#2D1B0E;
@@ -98,15 +100,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
 .app{display:flex;height:100vh;max-width:1200px;margin:0 auto;animation: slideIn 0.8s ease-out;}
 
 /* LEFT SIDEBAR */
-.left-sidebar{width:275px;padding:24px 20px;display:flex;flex-direction:column;border-right:1px solid rgba(139,94,60,0.1);}
-.app-logo{display:flex;align-items:center;gap:12px;margin-bottom:40px;padding:0 12px;cursor:pointer;}
-.nav-item{display:flex;align-items:center;gap:18px;padding:16px 20px;border-radius:32px;font-size:18px;color:var(--earth1);cursor:pointer;transition:all 0.2s;font-weight:500;margin-bottom:8px;}
-.nav-item:hover{background:rgba(139,94,60,0.06);transform:translateX(4px);}
-.nav-item.active{font-weight:700;}
-.nav-icon{font-size:24px;transition:transform 0.2s;}
+.left-sidebar{width:88px;padding:24px 0;display:flex;flex-direction:column;border-right:1px solid rgba(139,94,60,0.1);align-items:center;}
+.app-logo{display:flex;align-items:center;justify-content:center;margin-bottom:40px;cursor:pointer;width:50px;height:50px;border-radius:50%;transition:background 0.2s;}
+.app-logo:hover{background:rgba(139,94,60,0.06);}
+.nav-item{display:flex;align-items:center;justify-content:center;width:50px;height:50px;border-radius:50%;color:var(--earth1);cursor:pointer;transition:all 0.2s;margin-bottom:8px;position:relative;}
+.nav-item:hover{background:rgba(139,94,60,0.06);}
+.nav-item.active .nav-icon{color:var(--earth1);} /* We can style active state if needed */
+.nav-icon{font-size:26px;transition:transform 0.2s;}
 .nav-item:hover .nav-icon{transform:scale(1.1);}
-.post-btn-large{width:90%;margin-top:24px;padding:18px;font-size:17px;border-radius:32px;}
-.user-profile-mini{margin-top:auto;display:flex;align-items:center;gap:12px;padding:12px;border-radius:32px;cursor:pointer;transition:all 0.2s;}
+.post-btn-large{width:52px;height:52px;margin-top:24px;padding:0;font-size:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.user-profile-mini{margin-top:auto;width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;transition:all 0.2s;}
 .user-profile-mini:hover{background:rgba(139,94,60,0.08);}
 .mini-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--earth3),var(--earth4));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
 
@@ -151,7 +154,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
 .post-text{font-size:16px;line-height:1.5;color:var(--earth1);margin-bottom:16px;word-break:break-word;}
 .post-media{margin-bottom:16px;border-radius:20px;overflow:hidden;border:1px solid rgba(139,94,60,0.1);max-height:450px;background:#000;box-shadow:0 8px 24px rgba(0,0,0,0.08);}
 .post-media img, .post-media video{width:100%;max-height:450px;object-fit:cover;display:block;}
-.post-actions{display:flex;gap:48px;color:var(--stone);margin-top:8px;}
+.post-actions{display:flex;justify-content:space-between;color:var(--stone);margin-top:8px;padding:0 16px 0 0;}
 .post-action{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;transition:all 0.2s;font-weight:500;}
 .post-action:hover{color:var(--green3);}
 .post-action.like:hover{color:var(--terracotta);}
@@ -175,6 +178,36 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
 .trend-name{font-weight:700;color:var(--earth1);font-size:16px;margin:2px 0;}
 .trend-count{font-size:13px;color:var(--stone);margin-top:4px;}
 
+/* MOBILE RESPONSIVENESS */
+@media (max-width: 768px) {
+  .app { flex-direction: column-reverse; height: 100dvh; max-width: 100vw; }
+  .right-sidebar { display: none; }
+  .left-sidebar { 
+    flex-direction: row; width: 100%; height: 60px; padding: 0; 
+    border-right: none; border-top: 1px solid rgba(139,94,60,0.1); 
+    justify-content: space-around; align-items: center; 
+    background: #fff; position: sticky; bottom: 0; z-index: 50;
+  }
+  .app-logo, .post-btn-large { display: none; }
+  .nav-item { width: auto; height: 100%; margin-bottom: 0; flex: 1; border-radius: 0; }
+  .user-profile-mini { margin-top: 0; width: auto; height: 100%; flex: 1; border-radius: 0; }
+  .mini-avatar { width: 32px; height: 32px; }
+  .main-feed { max-width: 100vw; border-right: none; }
+  .post-card { padding: 16px; gap: 12px; }
+  .post-avatar { width: 44px; height: 44px; }
+  .post-media img, .post-media video { max-height: 300px; }
+  .mobile-fab {
+    display: flex; position: fixed; bottom: 80px; right: 24px;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--green3); color: #fff; align-items: center; justify-content: center;
+    font-size: 24px; box-shadow: 0 4px 12px rgba(74,124,89,0.4); z-index: 40; cursor: pointer;
+  }
+  .login-card { width: 90%; padding: 32px 24px; }
+}
+@media (min-width: 769px) {
+  .mobile-fab { display: none; }
+}
+
 /* NOTIF */
 .notif{position:fixed;top:24px;right:24px;z-index:200;background:var(--earth2);color:#F5ECD7;padding:16px 24px;border-radius:16px;font-size:15px;font-weight:500;transform:translateY(-100px);opacity:0;transition:all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);display:flex;align-items:center;gap:12px;box-shadow:0 12px 32px rgba(0,0,0,0.15);}
 .notif.show{transform:translateY(0);opacity:1;}
@@ -185,85 +218,54 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
 <div class="notif" id="notif">🌿 <span id="notif-text"></span></div>
 
 <!-- LOGIN SCREEN -->
+{% if not current_user %}
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
     <div class="logo-icon">🌿</div>
     <div class="logo-text">Rooted</div>
     <div class="logo-sub">Join the conversation.</div>
-
-    <div class="phone-phase" id="phonePhase">
-      <div style="font-size:13px;color:rgba(228,201,154,0.8);text-align:left;margin-bottom:10px;font-weight:500;">Your phone number</div>
-      <div class="phone-wrap">
-        <div class="country-code"><span style="font-size:20px;margin-right:6px;">🇮🇳</span> +91</div>
-        <input type="tel" class="phone-input" id="phoneInput" placeholder="98765 43210" maxlength="10">
-      </div>
-      <button class="btn-primary" style="width:100%;border-radius:16px;padding:16px;font-size:16px;" onclick="sendOTP()">Log in</button>
-    </div>
-
-    <div class="otp-phase" id="otpPhase">
-      <div style="font-size:13px;color:rgba(228,201,154,0.8);text-align:left;margin-bottom:16px;">Enter OTP sent to +91 <span id="phoneDisplay"></span></div>
-      <div class="otp-row">
-        <input class="otp-box" maxlength="1" id="o1" oninput="otpMove(this,'o2')" onkeydown="otpBack(event,this,'')">
-        <input class="otp-box" maxlength="1" id="o2" oninput="otpMove(this,'o3')" onkeydown="otpBack(event,this,'o1')">
-        <input class="otp-box" maxlength="1" id="o3" oninput="otpMove(this,'o4')" onkeydown="otpBack(event,this,'o2')">
-        <input class="otp-box" maxlength="1" id="o4" oninput="otpMove(this,'o5')" onkeydown="otpBack(event,this,'o3')">
-        <input class="otp-box" maxlength="1" id="o5" oninput="otpMove(this,'o6')" onkeydown="otpBack(event,this,'o4')">
-        <input class="otp-box" maxlength="1" id="o6" oninput="otpMove(this,'')" onkeydown="otpBack(event,this,'o5')">
-      </div>
-      <button class="btn-primary" style="width:100%;border-radius:16px;padding:16px;font-size:16px;" onclick="verifyOTP()">Verify</button>
-    </div>
+    <a href="/login/google" class="btn-primary" style="display:block; text-align:center; width:100%; border-radius:16px; padding:16px; font-size:16px; text-decoration:none; margin-top:24px;">Sign in with Google</a>
   </div>
 </div>
-
-<!-- PROFILE SETUP -->
-<div class="profile-setup" id="profileSetup">
-  <div class="profile-setup-card">
-    <div class="setup-avatar">🌱</div>
-    <div class="setup-title">Set Up Your Profile</div>
-    <div class="setup-sub">How should people find you?</div>
-    <div class="input-group">
-      <div class="input-label">Display Name</div>
-      <input class="text-input" id="nameInput" placeholder="Priya Sharma" type="text">
-    </div>
-    <div class="input-group">
-      <div class="input-label">Username (Handle)</div>
-      <input class="text-input" id="handleInput" placeholder="@priya_s" type="text">
-    </div>
-    <button class="btn-primary" style="width:100%;margin-top:12px;border-radius:16px;padding:16px;font-size:16px;" onclick="completeSetup()">Start Scrolling</button>
-  </div>
-</div>
+{% else %}
 
 <!-- MAIN APP -->
-<div class="app" id="mainApp" style="display:none;">
+<div class="app" id="mainApp">
   <!-- LEFT SIDEBAR -->
   <div class="left-sidebar">
     <div class="app-logo">
       <div class="logo-icon" style="width:40px;height:40px;font-size:20px;border-radius:12px;">🌿</div>
-      <div style="font-family:'Playfair Display',serif;font-size:26px;color:var(--earth2);font-weight:600;">Rooted</div>
     </div>
     
-    <div class="nav-item active"><span class="nav-icon">🏠</span> Home</div>
-    <div class="nav-item"><span class="nav-icon">🔍</span> Explore</div>
-    <div class="nav-item"><span class="nav-icon">🔔</span> Notifications</div>
-    <div class="nav-item"><span class="nav-icon">✉️</span> Messages</div>
-    <div class="nav-item"><span class="nav-icon">👤</span> Profile</div>
+    <div class="nav-item active" onclick="switchTab('feed')" title="Home"><span class="nav-icon">🏠</span></div>
+    <div class="nav-item" onclick="switchTab('explore')" title="Explore Nodes"><span class="nav-icon">🔍</span></div>
+    <div class="nav-item" onclick="switchTab('money')" title="Rooted Money"><span class="nav-icon">💸</span></div>
+    <div class="nav-item" onclick="switchTab('jobs')" title="Rooted Jobs"><span class="nav-icon">💼</span></div>
+    <div class="nav-item" onclick="switchTab('ai')" title="Rooted AI Assistant"><span class="nav-icon">🤖</span></div>
+    <div class="nav-item" onclick="goToMyProfile()" title="Profile"><span class="nav-icon">👤</span></div>
     
-    <button class="btn-primary post-btn-large" onclick="document.getElementById('msgInput').focus()">Post</button>
+    <button class="btn-primary post-btn-large" onclick="document.getElementById('msgInput').focus()" title="Post">💬</button>
     
-    <div class="user-profile-mini">
-      <div class="mini-avatar" id="navAvatar">P</div>
-      <div style="flex:1;">
-        <div style="font-weight:700;font-size:16px;color:var(--earth1);" id="navName">Priya</div>
-        <div style="font-size:14px;color:var(--stone);" id="navHandle">@priya</div>
-      </div>
-      <div style="color:var(--stone);font-weight:700;">···</div>
+    <a href="/logout" style="text-decoration:none;"><div class="nav-item" title="Log Out"><span class="nav-icon">🚪</span></div></a>
+    
+    <div class="user-profile-mini" title="Your Profile" onclick="openProfileEdit()">
+      {% if current_user.photo %}
+      <img src="{{ current_user.photo }}" class="mini-avatar" id="navAvatar" style="object-fit:cover;">
+      {% else %}
+      <div class="mini-avatar" id="navAvatar">{{ current_user.name[0] | upper }}</div>
+      {% endif %}
     </div>
   </div>
 
-  <!-- MAIN FEED -->
-  <div class="main-feed">
-    <div class="feed-header">
-      <h2>Home</h2>
+  <!-- MAIN CONTENT VIEWS -->
+  <div class="main-feed" id="feedView">
+    <div class="mobile-fab" onclick="document.getElementById('msgInput').focus(); document.getElementById('postsArea').scrollTop = 0;" title="Post">💬</div>
+    
+    <div class="feed-header" style="display:flex; flex-direction:column; align-items:center;">
+      <div style="display:flex; justify-content:space-around; width:100%; font-weight:600; font-size:15px; color:var(--stone);">
+        <span style="color:var(--earth1); border-bottom:4px solid var(--green3); padding-bottom:12px; cursor:pointer; flex:1; text-align:center;">For You</span>
+        <span style="cursor:pointer; flex:1; text-align:center; padding-bottom:12px;" onclick="showNotif('Following coming soon!')">Following</span>
+      </div>
     </div>
     
     <!-- COMPOSER -->
@@ -281,10 +283,16 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
         </div>
 
         <div class="composer-actions">
-          <div class="action-icons">
+          <div class="action-icons" style="align-items:center;">
             <div class="icon-btn" onclick="document.getElementById('photoInput').click()" title="Media (Max 500MB)">📷</div>
-            <div class="icon-btn">📊</div>
-            <div class="icon-btn">😊</div>
+            <div class="icon-btn" onclick="showNotif('Polls coming soon!')">📊</div>
+            <div class="icon-btn" onclick="showNotif('Emojis coming soon!')">😊</div>
+            <select id="nodeSelect" style="margin-left:12px; padding:6px 12px; border-radius:16px; border:1px solid rgba(139,94,60,0.2); background:var(--cream); color:var(--earth1); outline:none; font-family:inherit;">
+              <option value="For You">🌍 Global</option>
+              <option value="Tech">💻 Tech</option>
+              <option value="Nature">🌲 Nature</option>
+              <option value="Finance">📈 Finance</option>
+            </select>
           </div>
           <button class="btn-primary" id="sendBtn" onclick="createPost()">Post</button>
         </div>
@@ -295,6 +303,24 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
     <div class="posts-area" id="postsArea">
       <!-- Posts render here -->
     </div>
+  </div>
+
+  <!-- PROFILE VIEW -->
+  <div class="main-feed" id="profileView" style="display:none; flex-direction:column;">
+    <div class="feed-header" style="display:flex; align-items:center; gap:16px; padding:12px 24px;">
+      <div onclick="closeProfile()" style="cursor:pointer; font-size:20px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.2s;" class="icon-btn">&larr;</div>
+      <div>
+        <h2 id="profileViewName" style="margin:0; font-size:20px; font-weight:700; color:var(--earth1);">Profile</h2>
+        <div id="profileViewHandle" style="font-size:14px; color:var(--stone);"></div>
+      </div>
+    </div>
+    <div class="posts-area" id="profilePostsArea"></div>
+  </div>
+
+  <div class="main-feed mock-view" id="mockView" style="display:none; justify-content:center; align-items:center; text-align:center; padding:48px;">
+    <div style="font-size:48px; margin-bottom:16px;" id="mockIcon">💸</div>
+    <h2 style="font-size:32px; font-weight:700; color:var(--earth1); margin-bottom:12px;" id="mockTitle">Rooted Money</h2>
+    <p style="font-size:18px; color:var(--stone); max-width:400px; line-height:1.5;">This feature is part of the Rooted Everything App vision. Coming soon in Phase 4.</p>
   </div>
 
   <!-- RIGHT SIDEBAR -->
@@ -329,14 +355,66 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
 
   <input type="file" id="photoInput" accept="image/*,video/*" onchange="handleFileUpload(event)" style="display:none;">
 </div>
+{% endif %}
 
+<!-- PROFILE EDIT MODAL -->
+<div id="profileEditModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:300; align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:24px; padding:32px; width:90%; max-width:400px;">
+    <h2 style="margin:0 0 24px 0; font-size:24px;">Edit Profile</h2>
+    
+    <div style="text-align:center; margin-bottom:24px;">
+      <div id="cropContainer" style="width:150px; height:150px; margin:0 auto 16px auto; border-radius:50%; overflow:hidden; background:var(--earth4);">
+        <img id="profileCropImage" style="max-width:100%; display:none;">
+      </div>
+      <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;" onchange="loadProfilePhoto(event)">
+      <button class="btn-primary" style="padding:8px 16px; font-size:14px; border-radius:20px;" onclick="document.getElementById('profilePhotoInput').click()">Change Photo</button>
+    </div>
+    
+    <button class="btn-primary" style="width:100%; padding:16px; border-radius:16px; font-size:16px;" onclick="saveProfile()" id="saveProfileBtn">Save Profile</button>
+    <button style="width:100%; padding:16px; background:none; border:none; color:var(--stone); margin-top:8px; cursor:pointer;" onclick="document.getElementById('profileEditModal').style.display='none'">Cancel</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 <script>
-// --- SOCKET.IO INTEGRATION ---
+// --- GLOBAL VARS & SETUP ---
 const socket = io();
-let currentUser = { name: 'You', handle: '@you' };
+let currentUser = null;
+{% if current_user %}
+currentUser = {
+    name: "{{ current_user.name }}",
+    handle: "{{ current_user.handle }}",
+    uuid: "{{ current_user.uuid }}",
+    photo: "{{ current_user.photo }}"
+};
+{% endif %}
+
+let replyingToPostId = null;
+let ALL_POSTS = [];
+let cropper = null;
+
+// --- INITIALIZE ---
+if (currentUser) {
+    socket.emit('join', currentUser);
+}
 
 socket.on('receive_post', (post) => {
-    addPostToFeed(post, true); // prepend to top
+    // Keep global state updated
+    const exists = ALL_POSTS.find(p => p.id === post.id);
+    if(!exists) {
+        ALL_POSTS.unshift(post);
+        addPostToFeed(post, true, 'postsArea'); // prepend to top
+    }
+    
+    // If viewing profile, also render there if it matches
+    const pView = document.getElementById('profileView');
+    if (pView.style.display === 'flex') {
+        const currentProfile = document.getElementById('profileViewHandle').innerText;
+        if (!exists && (post.handle === currentProfile || post.retweetedFrom === currentProfile)) {
+            addPostToFeed(post, true, 'profilePostsArea');
+        }
+    }
 });
 
 socket.on('update_likes', (data) => {
@@ -351,43 +429,52 @@ socket.on('update_likes', (data) => {
     }
 });
 
-// --- AUTH MOCK ---
-function sendOTP(){
-  document.getElementById('phonePhase').classList.add('hidden');
-  document.getElementById('otpPhase').classList.add('active');
-  document.getElementById('o1').focus();
+// --- PROFILE EDIT & CROPPER ---
+function openProfileEdit() {
+    document.getElementById('profileEditModal').style.display = 'flex';
 }
 
-function otpMove(el,nextId){
-  if(el.value&&nextId)document.getElementById(nextId).focus();
-  const filled=['o1','o2','o3','o4','o5','o6'].every(id=>document.getElementById(id).value);
-  if(filled)setTimeout(verifyOTP,300);
-}
-function otpBack(e,el,prevId){
-  if(e.key==='Backspace'&&!el.value&&prevId)document.getElementById(prevId).focus();
+function loadProfilePhoto(event) {
+    const file = event.target.files[0];
+    if(!file) return;
+    
+    const img = document.getElementById('profileCropImage');
+    img.src = URL.createObjectURL(file);
+    img.style.display = 'block';
+    
+    if(cropper) cropper.destroy();
+    cropper = new Cropper(img, {
+        aspectRatio: 1,
+        viewMode: 1,
+        autoCropArea: 1
+    });
 }
 
-function verifyOTP(){
-  document.getElementById('loginScreen').classList.add('hidden');
-  setTimeout(()=>document.getElementById('profileSetup').classList.add('show'),200);
-}
-
-function completeSetup(){
-  const name = document.getElementById('nameInput').value.trim() || 'Anonymous';
-  let handle = document.getElementById('handleInput').value.trim() || '@user';
-  if(!handle.startsWith('@')) handle = '@' + handle;
-  
-  currentUser = { name, handle };
-  
-  document.getElementById('navName').textContent = name;
-  document.getElementById('navHandle').textContent = handle;
-  document.getElementById('navAvatar').textContent = name.charAt(0).toUpperCase();
-  document.getElementById('composerAvatar').textContent = name.charAt(0).toUpperCase();
-
-  document.getElementById('profileSetup').classList.remove('show');
-  document.getElementById('mainApp').style.display='flex';
-  
-  socket.emit('join', currentUser);
+function saveProfile() {
+    if(!cropper) {
+        document.getElementById('profileEditModal').style.display = 'none';
+        return;
+    }
+    
+    const btn = document.getElementById('saveProfileBtn');
+    btn.innerText = 'Saving...';
+    
+    cropper.getCroppedCanvas({width: 200, height: 200}).toBlob((blob) => {
+        const formData = new FormData();
+        formData.append('media', blob, 'profile.jpg');
+        formData.append('type', 'profile');
+        
+        fetch('/upload', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                window.location.reload(); // Reload to show new picture everywhere
+            } else {
+                alert('Upload failed: ' + data.error);
+                btn.innerText = 'Save Profile';
+            }
+        });
+    }, 'image/jpeg', 0.9);
 }
 
 // --- COMPOSER ---
@@ -406,13 +493,17 @@ function createPost(){
       handle: currentUser.handle,
       text: text,
       mediaUrl: pendingMediaUrl,
-      mediaType: pendingMediaType
+      mediaType: pendingMediaType,
+      parentId: replyingToPostId,
+      node: document.getElementById('nodeSelect').value
   });
 
   input.value='';
   input.style.height='auto';
+  input.placeholder = "What is happening?!";
   pendingMediaUrl = null;
   pendingMediaType = null;
+  replyingToPostId = null;
   cancelUpload();
   showNotif('Your post was sent! 🌿');
 }
@@ -421,9 +512,84 @@ function likePost(postId, btnEl) {
     socket.emit('like_post', postId);
 }
 
+function replyToPost(postId, handle) {
+    replyingToPostId = postId;
+    const input = document.getElementById('msgInput');
+    input.placeholder = `Replying to ${handle}...`;
+    input.focus();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function retweetPost(postId) {
+    socket.emit('create_post', {
+        sender: currentUser.name,
+        handle: currentUser.handle,
+        isRetweet: true,
+        originalPostId: postId
+    });
+    showNotif('Retweeted! 🔁');
+}
+
+function bookmarkPost(postId) {
+    socket.emit('bookmark_post', postId);
+    showNotif('Saved to your Bookmarks! 🔖 (+10 Score)');
+}
+
+function switchTab(tab) {
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    const feed = document.getElementById('feedView');
+    const mock = document.getElementById('mockView');
+    const profile = document.getElementById('profileView');
+    
+    profile.style.display = 'none';
+    
+    if(tab === 'feed') {
+        feed.style.display = 'flex';
+        mock.style.display = 'none';
+    } else {
+        feed.style.display = 'none';
+        mock.style.display = 'flex';
+        
+        const title = document.getElementById('mockTitle');
+        const icon = document.getElementById('mockIcon');
+        if(tab === 'explore') { title.innerText = 'Explore Nodes'; icon.innerText = '🔍'; }
+        if(tab === 'money') { title.innerText = 'Rooted Money'; icon.innerText = '💸'; }
+        if(tab === 'jobs') { title.innerText = 'Rooted Jobs'; icon.innerText = '💼'; }
+        if(tab === 'ai') { title.innerText = 'Rooted AI Assistant'; icon.innerText = '🤖'; }
+    }
+}
+
+function openProfile(handle, name) {
+    document.getElementById('feedView').style.display = 'none';
+    document.getElementById('mockView').style.display = 'none';
+    const pView = document.getElementById('profileView');
+    pView.style.display = 'flex';
+    
+    document.getElementById('profileViewName').innerText = name || handle;
+    document.getElementById('profileViewHandle').innerText = handle;
+    
+    const pArea = document.getElementById('profilePostsArea');
+    pArea.innerHTML = ''; // clear
+    
+    // Filter and render
+    const userPosts = ALL_POSTS.filter(p => p.handle === handle || p.retweetedFrom === handle);
+    userPosts.forEach(p => addPostToFeed(p, false, 'profilePostsArea'));
+}
+
+function closeProfile() {
+    document.getElementById('profileView').style.display = 'none';
+    document.getElementById('feedView').style.display = 'flex';
+}
+
+function goToMyProfile() {
+    openProfile(currentUser.handle, currentUser.name);
+}
+
 // --- RENDER POST ---
-function addPostToFeed(post, prepend=false){
-  const area=document.getElementById('postsArea');
+function addPostToFeed(post, prepend=false, targetId='postsArea'){
+  const area=document.getElementById(targetId);
   const card=document.createElement('div');
   card.className='post-card';
   card.id = `post-${post.id}`;
@@ -443,33 +609,62 @@ function addPostToFeed(post, prepend=false){
   let textHtml = '';
   if (post.text) {
       const safeText = post.text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
-      textHtml = `<div class="post-text">${safeText}</div>`;
+      if (safeText.length > 280) {
+          const short = safeText.substring(0, 280);
+          // Avoid quotes breaking HTML
+          const escapedFull = safeText.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          textHtml = `
+            <div class="post-text" id="text-${post.id}">
+              ${short}... <span style="color:var(--green3);cursor:pointer;font-weight:600;" onclick="document.getElementById('text-${post.id}').innerHTML='${escapedFull}';">Read More</span>
+            </div>`;
+      } else {
+          textHtml = `<div class="post-text">${safeText}</div>`;
+      }
   }
   
   const initial = post.sender.charAt(0).toUpperCase();
   
+  let metaHtml = '';
+  if (post.isRetweet && post.retweetedFrom) {
+      metaHtml += `<div style="font-size:13px; color:var(--stone); margin-bottom:8px; display:flex; align-items:center; gap:6px;"><span style="font-size:16px">🔁</span> ${post.retweetedFrom} retweeted</div>`;
+  } else if (post.parentId && post.replyToHandle) {
+      metaHtml += `<div style="font-size:13px; color:var(--stone); margin-bottom:8px;">Replying to <span onclick="openProfile('${post.replyToHandle}', '${post.replyToHandle}')" style="color:var(--green3); cursor:pointer;">${post.replyToHandle}</span></div>`;
+  }
+  
   card.innerHTML = `
-    <div class="post-avatar">${initial}</div>
-    <div class="post-content">
-      <div class="post-header">
-        <span class="post-name">${post.sender}</span>
-        <span class="post-handle">${post.handle}</span>
-        <span class="post-time">${timeStr}</span>
-      </div>
-      ${textHtml}
-      ${mediaHtml}
-      <div class="post-actions">
-        <div class="post-action" onclick="showNotif('Reply coming soon!')">
-          <div class="action-icon">💬</div>
-          <span>0</span>
-        </div>
-        <div class="post-action" onclick="showNotif('Retweet coming soon!')">
-          <div class="action-icon">🔁</div>
-          <span>0</span>
-        </div>
-        <div class="post-action like" id="like-btn-${post.id}" onclick="likePost('${post.id}', this)">
-          <div class="action-icon">❤️</div>
-          <span id="like-count-${post.id}">${post.likes > 0 ? post.likes : ''}</span>
+    <div style="display:flex; flex-direction:column; width:100%">
+      ${metaHtml}
+      <div style="display:flex; gap:16px;">
+        <div class="post-avatar">${initial}</div>
+        <div class="post-content">
+          <div class="post-header">
+            <span class="post-name" onclick="openProfile('${post.handle}', '${post.sender}')">${post.sender}</span>
+            <span class="post-handle" onclick="openProfile('${post.handle}', '${post.sender}')" style="cursor:pointer;">${post.handle}</span>
+            <span class="post-time">${timeStr}</span>
+            ${post.node && post.node !== 'For You' ? `<span style="font-size:12px; background:rgba(74,124,89,0.1); color:var(--green3); padding:4px 8px; border-radius:12px; margin-left:8px; font-weight:600;">${post.node}</span>` : ''}
+          </div>
+          ${textHtml}
+          ${mediaHtml}
+          <div class="post-actions">
+            <div class="post-action" onclick="replyToPost('${post.id}', '${post.handle}')" title="Reply">
+              <div class="action-icon">💬</div>
+              <span style="display:none;">Reply</span>
+            </div>
+            <div class="post-action" onclick="retweetPost('${post.originalPostId || post.id}')" title="Retweet">
+              <div class="action-icon">🔁</div>
+              <span style="display:none;">Retweet</span>
+            </div>
+            <div class="post-action like" id="like-btn-${post.id}" onclick="likePost('${post.id}', this)" title="Like">
+              <div class="action-icon">❤️</div>
+              <span id="like-count-${post.id}">${post.likes > 0 ? post.likes : ''}</span>
+            </div>
+            <div class="post-action" onclick="bookmarkPost('${post.id}')" title="Bookmark">
+              <div class="action-icon">🔖</div>
+            </div>
+            <div class="post-action" title="Share" onclick="showNotif('Share coming soon!')">
+              <div class="action-icon">📤</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -487,15 +682,25 @@ let pendingMediaUrl = null;
 let pendingMediaType = null;
 
 function handleFileUpload(e){
-  const file=e.target.files[0];if(!file)return;
-  if(file.size>500*1024*1024){showNotif('File too large! Max 500MB');return;}
+  const file=e.target.files[0];
+  if(!file)return;
   
-  document.getElementById('uploadPreview').classList.add('show');
-  document.getElementById('sendBtn').disabled = true;
-
+  const pct=document.getElementById('uploadPct');
+  const bar=document.getElementById('uploadBar');
+  const preview=document.getElementById('uploadPreview');
+  const icon=document.getElementById('uploadIcon');
+  
+  preview.style.display='flex';
+  bar.style.width='0%';
+  pct.innerText='0%';
+  
+  if(file.type.startsWith('video/')) icon.innerText='🎥';
+  else icon.innerText='📷';
+  
   const formData = new FormData();
   formData.append('media', file);
-
+  formData.append('type', 'post');
+  
   const xhr = new XMLHttpRequest();
   xhr.open('POST', '/upload', true);
 
