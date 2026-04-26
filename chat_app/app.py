@@ -65,6 +65,7 @@ class User(db.Model, UserMixin):
     bio = db.Column(db.String(250), default='')
     profile_photo_url = db.Column(db.String(200), default='')
     account_tier = db.Column(db.String(20), default='Free')
+    is_private = db.Column(db.Boolean, default=False)
     
     followed = db.relationship(
         'User', secondary=followers,
@@ -203,7 +204,18 @@ def upload_file():
         url = upload_result.get('secure_url')
         
         if upload_type == 'profile':
-            current_user.profile_photo_url = url
+            new_name = request.form.get('name')
+            new_bio = request.form.get('bio')
+            is_private = request.form.get('is_private') == 'true'
+            
+            if url:
+                current_user.profile_photo_url = url
+            if new_name:
+                current_user.display_name = new_name
+            if new_bio is not None:
+                current_user.bio = new_bio
+            current_user.is_private = is_private
+                
             db.session.commit()
             return jsonify({'success': True, 'url': url, 'type': media_type, 'profile_updated': True})
             
@@ -372,6 +384,21 @@ def handle_join(user_data):
     # Fetch top 200 recent posts
     recent_posts = Post.query.order_by(Post.timestamp.desc()).limit(200).all()
     
+    # Filter private posts
+    visible_posts = []
+    followed_handles = []
+    if current_user.is_authenticated:
+        followed_handles = [u.handle for u in current_user.followed]
+        
+    for p in recent_posts:
+        user = User.query.filter_by(handle=p.handle).first()
+        if user and user.is_private:
+            if not current_user.is_authenticated:
+                continue
+            if p.handle != current_user.handle and p.handle not in followed_handles:
+                continue
+        visible_posts.append(p)
+    
     def get_score(p):
         score = p.likes + (p.bookmarks * 10) + (p.reply_count * 150)
         # Add a tiny bit of recency bias so new posts aren't always strictly at 0 below old 0s
@@ -382,9 +409,9 @@ def handle_join(user_data):
         return score
         
     # Sort algorithmically
-    recent_posts.sort(key=get_score, reverse=True)
+    visible_posts.sort(key=get_score, reverse=True)
     # Send top 100
-    for p in recent_posts[:100]:
+    for p in visible_posts[:100]:
         reply_to_handle = None
         if p.parent_id:
             parent_post = Post.query.get(p.parent_id)

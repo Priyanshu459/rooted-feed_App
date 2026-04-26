@@ -242,6 +242,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
 /* NOTIF */
 .notif{position:fixed;top:24px;right:24px;z-index:200;background:var(--earth2);color:#F5ECD7;padding:16px 24px;border-radius:16px;font-size:15px;font-weight:500;transform:translateY(-100px);opacity:0;transition:all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);display:flex;align-items:center;gap:12px;box-shadow:0 12px 32px rgba(0,0,0,0.15);}
 .notif.show{transform:translateY(0);opacity:1;}
+
+/* TOGGLE SWITCH */
+.toggle-switch input:checked + .toggle-slider { background-color: var(--green3); }
+.toggle-switch input:checked + .toggle-slider .toggle-knob { transform: translateX(22px); }
 </style>
 </head>
 <body>
@@ -448,6 +452,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
       <button class="btn-primary" style="padding:8px 16px; font-size:14px; border-radius:20px;" onclick="document.getElementById('profilePhotoInput').click()">Change Photo</button>
     </div>
     
+    <div style="margin-bottom:16px;">
+      <label style="display:block; font-size:14px; color:var(--stone); margin-bottom:4px; font-weight:600;">Display Name</label>
+      <input type="text" id="editProfileName" style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(139,94,60,0.2); outline:none; font-size:15px;">
+    </div>
+    
+    <div style="margin-bottom:24px;">
+      <label style="display:block; font-size:14px; color:var(--stone); margin-bottom:4px; font-weight:600;">Bio</label>
+      <textarea id="editProfileBio" style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(139,94,60,0.2); outline:none; font-size:15px; resize:vertical; min-height:80px;"></textarea>
+    </div>
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; padding:16px; background:var(--cream); border-radius:12px;">
+      <div>
+        <div style="font-weight:600; font-size:15px; color:var(--earth1);">Private Profile</div>
+        <div style="font-size:13px; color:var(--stone); margin-top:2px;">Hide your posts from the global feed</div>
+      </div>
+      <label class="toggle-switch" style="position:relative; display:inline-block; width:50px; height:28px;">
+        <input type="checkbox" id="editProfilePrivate" style="opacity:0; width:0; height:0;">
+        <span class="toggle-slider" style="position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:var(--stone); transition:.4s; border-radius:34px;">
+          <span class="toggle-knob" style="position:absolute; height:20px; width:20px; left:4px; bottom:4px; background-color:white; transition:.4s; border-radius:50%;"></span>
+        </span>
+      </label>
+    </div>
+    
     <button class="btn-primary" style="width:100%; padding:16px; border-radius:16px; font-size:16px;" onclick="saveProfile()" id="saveProfileBtn">Save Profile</button>
     <button style="width:100%; padding:16px; background:none; border:none; color:var(--stone); margin-top:8px; cursor:pointer;" onclick="document.getElementById('profileEditModal').style.display='none'">Cancel</button>
   </div>
@@ -461,10 +488,12 @@ const socket = io();
 let currentUser = null;
 {% if current_user %}
 currentUser = {
-    name: "{{ current_user.name }}",
+    name: "{{ current_user.display_name }}",
     handle: "{{ current_user.handle }}",
     uuid: "{{ current_user.uuid }}",
-    photo: "{{ current_user.photo }}"
+    photo: "{{ current_user.profile_photo_url }}",
+    bio: `{{ current_user.bio }}`,
+    is_private: {{ 'true' if current_user.is_private else 'false' }}
 };
 {% endif %}
 
@@ -510,6 +539,11 @@ socket.on('update_likes', (data) => {
 // --- PROFILE EDIT & CROPPER ---
 function openProfileEdit() {
     document.getElementById('profileEditModal').style.display = 'flex';
+    if(currentUser) {
+        document.getElementById('editProfileName').value = currentUser.name || '';
+        document.getElementById('editProfileBio').value = currentUser.bio || '';
+        document.getElementById('editProfilePrivate').checked = currentUser.is_private;
+    }
 }
 
 function loadProfilePhoto(event) {
@@ -529,24 +563,48 @@ function loadProfilePhoto(event) {
 }
 
 function saveProfile() {
-    if(!cropper) {
-        document.getElementById('profileEditModal').style.display = 'none';
-        return;
-    }
-    
     const btn = document.getElementById('saveProfileBtn');
     btn.innerText = 'Saving...';
     
-    cropper.getCroppedCanvas({width: 200, height: 200}).toBlob((blob) => {
+    const nameVal = document.getElementById('editProfileName').value.trim();
+    const bioVal = document.getElementById('editProfileBio').value.trim();
+    const isPrivate = document.getElementById('editProfilePrivate').checked;
+    
+    if(!cropper) {
+        // Just text changes
         const formData = new FormData();
-        formData.append('media', blob, 'profile.jpg');
         formData.append('type', 'profile');
+        formData.append('name', nameVal);
+        formData.append('bio', bioVal);
+        formData.append('is_private', isPrivate);
         
         fetch('/upload', { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
             if(data.success) {
-                window.location.reload(); // Reload to show new picture everywhere
+                window.location.reload();
+            } else {
+                alert('Upload failed: ' + data.error);
+                btn.innerText = 'Save Profile';
+            }
+        });
+        return;
+    }
+    
+    // With Image Cropper
+    cropper.getCroppedCanvas({width: 200, height: 200}).toBlob((blob) => {
+        const formData = new FormData();
+        formData.append('media', blob, 'profile.jpg');
+        formData.append('type', 'profile');
+        formData.append('name', nameVal);
+        formData.append('bio', bioVal);
+        formData.append('is_private', isPrivate);
+        
+        fetch('/upload', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                window.location.reload();
             } else {
                 alert('Upload failed: ' + data.error);
                 btn.innerText = 'Save Profile';
