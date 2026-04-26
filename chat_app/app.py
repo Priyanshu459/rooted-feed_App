@@ -74,7 +74,7 @@ class User(db.Model, UserMixin):
         backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
         
     def is_following(self, user):
-        return self.followed.filter(followers.c.followed_id == user.id).count() > 0
+        return self.followed.filter_by(id=user.id).first() is not None
 
     def follow(self, user):
         if not self.is_following(user):
@@ -184,25 +184,26 @@ def logout():
 @app.route('/upload', methods=['POST'])
 @login_required
 def upload_file():
-    if 'media' not in request.files:
-        return jsonify({'error': 'No media part'}), 400
-    file = request.files['media']
-    
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
-        
     upload_type = request.form.get('type', 'post')
+    url = None
+    media_type = None
     
-    try:
-        if file.mimetype.startswith('video/'):
-            upload_result = cloudinary.uploader.upload(file, resource_type="video")
-            media_type = 'video'
-        else:
-            upload_result = cloudinary.uploader.upload(file)
-            media_type = 'image'
-            
-        url = upload_result.get('secure_url')
+    if 'media' in request.files and request.files['media'].filename != '':
+        file = request.files['media']
+        try:
+            if file.mimetype.startswith('video/'):
+                upload_result = cloudinary.uploader.upload(file, resource_type="video")
+                media_type = 'video'
+            else:
+                upload_result = cloudinary.uploader.upload(file)
+                media_type = 'image'
+            url = upload_result.get('secure_url')
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    elif upload_type != 'profile':
+        return jsonify({'error': 'No media part'}), 400
         
+    try:
         if upload_type == 'profile':
             new_name = request.form.get('name')
             new_bio = request.form.get('bio')
