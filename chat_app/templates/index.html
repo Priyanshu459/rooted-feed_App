@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rooted</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --earth1:#2D1B0E;
+  --earth2:#5C3A1E;
+  --earth3:#8B5E3C;
+  --earth4:#C4956A;
+  --earth5:#E8C99A;
+  --earth6:#F5ECD7;
+  --green1:#1A2E1A;
+  --green2:#2E5435;
+  --green3:#4A7C59;
+  --green4:#7BAE8A;
+  --green5:#B8D4C0;
+  --green6:#E8F5EC;
+  --cream:#FBF7F0;
+  --sage:#8FAF8F;
+  --terracotta:#C4614A;
+  --moss:#5C7A4E;
+  --sand:#D4B483;
+  --stone:#7A6B5A;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1);height:100vh;overflow:hidden;}
+
+/* UTILS & ANIMATIONS */
+@keyframes slideIn { from { opacity: 0; transform: translateY(-15px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes heartPop { 0% { transform: scale(1); } 50% { transform: scale(1.3); } 100% { transform: scale(1); } }
+@keyframes floatUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+.btn-primary{
+  background:linear-gradient(135deg,var(--green3),var(--moss));
+  border:none;border-radius:24px;
+  color:#FBF7F0;font-size:15px;font-weight:600;
+  cursor:pointer;padding:12px 24px;
+  transition:all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  font-family: inherit;
+  box-shadow:0 4px 12px rgba(74,124,89,0.2);
+}
+.btn-primary:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 20px rgba(74,124,89,0.35);}
+.btn-primary:disabled{opacity:0.6;cursor:not-allowed;transform:none;box-shadow:none;}
+
+/* LOGIN SCREEN */
+.login-screen{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,#1A2E1A 0%,#2D1B0E 40%,#5C3A1E 100%);
+  display:flex;align-items:center;justify-content:center;
+  z-index:100;transition:opacity 0.6s,transform 0.6s;
+}
+.login-screen.hidden{opacity:0;pointer-events:none;transform:scale(1.05);}
+.login-card{
+  position:relative;z-index:2;
+  background:rgba(251,247,240,0.08);
+  backdrop-filter:blur(24px);
+  -webkit-backdrop-filter:blur(24px);
+  border:1px solid rgba(228,201,154,0.15);
+  border-radius:32px;padding:48px 40px;width:380px;text-align:center;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+  animation: floatUp 0.8s ease-out;
+}
+.logo-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--green4),var(--earth4));border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 8px 16px rgba(0,0,0,0.1);}
+.logo-text{font-family:'Playfair Display',serif;font-size:32px;color:#F5ECD7;font-weight:600;margin-top:12px;}
+.logo-sub{font-size:14px;color:rgba(228,201,154,0.8);margin-bottom:36px;letter-spacing:1.5px;text-transform:uppercase;}
+
+.phone-wrap{display:flex;gap:0;margin-bottom:16px;border:1px solid rgba(228,201,154,0.2);border-radius:16px;overflow:hidden;background:rgba(255,255,255,0.05);transition:border-color 0.3s;}
+.phone-wrap:focus-within{border-color:var(--earth4);background:rgba(255,255,255,0.08);}
+.country-code{color:#E8C99A;padding:0 16px;font-size:16px;display:flex;align-items:center;border-right:1px solid rgba(228,201,154,0.15);}
+.phone-input{flex:1;background:transparent;border:none;outline:none;color:#FBF7F0;font-size:16px;padding:16px;font-family:inherit;letter-spacing:1px;}
+.phone-input::placeholder{color:rgba(228,201,154,0.4);}
+
+.otp-row{display:flex;gap:12px;margin-bottom:32px;justify-content:center;}
+.otp-box{width:56px;height:64px;background:rgba(255,255,255,0.05);border:1px solid rgba(228,201,154,0.2);border-radius:16px;color:#FBF7F0;font-size:24px;font-weight:600;text-align:center;outline:none;font-family:inherit;transition:all 0.3s;}
+.otp-box:focus{border-color:var(--earth4);background:rgba(255,255,255,0.1);transform:translateY(-2px);box-shadow:0 8px 16px rgba(0,0,0,0.1);}
+.otp-phase{display:none;}
+.otp-phase.active{display:block;}
+.phone-phase.hidden{display:none;}
+
+/* PROFILE SETUP */
+.profile-setup{position:fixed;inset:0;background:rgba(45,27,14,0.6);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;z-index:90;}
+.profile-setup.show{display:flex;}
+.profile-setup-card{background:#FBF7F0;border-radius:32px;padding:48px;width:420px;border:1px solid rgba(139,94,60,0.15);box-shadow:0 32px 64px rgba(0,0,0,0.15);animation: floatUp 0.6s ease-out;}
+.setup-avatar{width:96px;height:96px;border-radius:50%;background:linear-gradient(135deg,var(--green4),var(--sage));margin:0 auto 24px;display:flex;align-items:center;justify-content:center;font-size:40px;position:relative;box-shadow:0 12px 24px rgba(123,174,138,0.2);}
+.setup-title{font-family:'Playfair Display',serif;font-size:26px;color:var(--earth2);text-align:center;margin-bottom:8px;}
+.setup-sub{font-size:14px;color:var(--stone);text-align:center;margin-bottom:32px;}
+.input-group{margin-bottom:20px;}
+.input-label{font-size:12px;color:var(--stone);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;font-weight:600;}
+.text-input{width:100%;padding:14px 18px;background:#fff;border:1px solid rgba(139,94,60,0.15);border-radius:16px;color:var(--earth1);font-size:15px;font-family:inherit;outline:none;transition:all 0.3s;}
+.text-input:focus{border-color:var(--earth3);box-shadow:0 0 0 4px rgba(139,94,60,0.08);}
+
+/* APP LAYOUT */
+.app{display:flex;height:100vh;max-width:1200px;margin:0 auto;animation: slideIn 0.8s ease-out;}
+
+/* LEFT SIDEBAR */
+.left-sidebar{width:275px;padding:24px 20px;display:flex;flex-direction:column;border-right:1px solid rgba(139,94,60,0.1);}
+.app-logo{display:flex;align-items:center;gap:12px;margin-bottom:40px;padding:0 12px;cursor:pointer;}
+.nav-item{display:flex;align-items:center;gap:18px;padding:16px 20px;border-radius:32px;font-size:18px;color:var(--earth1);cursor:pointer;transition:all 0.2s;font-weight:500;margin-bottom:8px;}
+.nav-item:hover{background:rgba(139,94,60,0.06);transform:translateX(4px);}
+.nav-item.active{font-weight:700;}
+.nav-icon{font-size:24px;transition:transform 0.2s;}
+.nav-item:hover .nav-icon{transform:scale(1.1);}
+.post-btn-large{width:90%;margin-top:24px;padding:18px;font-size:17px;border-radius:32px;}
+.user-profile-mini{margin-top:auto;display:flex;align-items:center;gap:12px;padding:12px;border-radius:32px;cursor:pointer;transition:all 0.2s;}
+.user-profile-mini:hover{background:rgba(139,94,60,0.08);}
+.mini-avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--earth3),var(--earth4));display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,0.08);}
+
+/* MAIN FEED */
+.main-feed{flex:1;max-width:600px;border-right:1px solid rgba(139,94,60,0.1);display:flex;flex-direction:column;background:#fff;}
+.feed-header{padding:20px 24px;border-bottom:1px solid rgba(139,94,60,0.1);background:rgba(255,255,255,0.85);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);position:sticky;top:0;z-index:10;}
+.feed-header h2{font-size:22px;font-weight:700;color:var(--earth1);}
+
+/* COMPOSER */
+.composer{padding:20px 24px;border-bottom:1px solid rgba(139,94,60,0.08);display:flex;gap:16px;background:#fff;}
+.composer-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--green4),var(--sage));flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;}
+.composer-body{flex:1;}
+.composer-input{width:100%;background:none;border:none;outline:none;font-size:20px;color:var(--earth1);font-family:inherit;resize:none;min-height:56px;padding-top:12px;font-weight:400;}
+.composer-input::placeholder{color:var(--stone);opacity:0.8;}
+.composer-actions{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:16px;border-top:1px solid rgba(139,94,60,0.06);}
+.action-icons{display:flex;gap:8px;}
+.icon-btn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--green3);font-size:20px;cursor:pointer;transition:all 0.2s;}
+.icon-btn:hover{background:rgba(74,124,89,0.12);transform:scale(1.05);}
+
+/* UPLOAD PREVIEW */
+.upload-preview{display:none;background:rgba(139,94,60,0.04);border:1px solid rgba(139,94,60,0.1);border-radius:16px;padding:16px;margin-top:12px;align-items:center;gap:12px;}
+.upload-preview.show{display:flex;}
+.upload-bar-bg{flex:1;height:6px;background:rgba(139,94,60,0.1);border-radius:6px;overflow:hidden;}
+.upload-bar{height:100%;background:linear-gradient(90deg,var(--green3),var(--green4));width:0%;transition:width 0.3s cubic-bezier(0.4, 0, 0.2, 1);border-radius:6px;}
+
+/* POSTS AREA */
+.posts-area{flex:1;overflow-y:auto;background:var(--cream);}
+.posts-area::-webkit-scrollbar{width:8px;}
+.posts-area::-webkit-scrollbar-thumb{background:rgba(139,94,60,0.15);border-radius:8px;}
+.posts-area::-webkit-scrollbar-thumb:hover{background:rgba(139,94,60,0.25);}
+
+.post-card{padding:24px;border-bottom:1px solid rgba(139,94,60,0.08);display:flex;gap:16px;background:#fff;transition:all 0.25s ease;animation: slideIn 0.4s ease-out;}
+.post-card:hover{background:#FBF7F0;}
+.post-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--earth4),var(--earth5));flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:600;font-size:18px;}
+.post-content{flex:1;min-width:0;}
+.post-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.post-name{font-weight:700;color:var(--earth1);font-size:16px;}
+.post-name:hover{text-decoration:underline;cursor:pointer;}
+.post-handle{color:var(--stone);font-size:15px;}
+.post-time{color:var(--stone);font-size:15px;}
+.post-time::before{content:"· ";margin-right:8px;}
+.post-text{font-size:16px;line-height:1.5;color:var(--earth1);margin-bottom:16px;word-break:break-word;}
+.post-media{margin-bottom:16px;border-radius:20px;overflow:hidden;border:1px solid rgba(139,94,60,0.1);max-height:450px;background:#000;box-shadow:0 8px 24px rgba(0,0,0,0.08);}
+.post-media img, .post-media video{width:100%;max-height:450px;object-fit:cover;display:block;}
+.post-actions{display:flex;gap:48px;color:var(--stone);margin-top:8px;}
+.post-action{display:flex;align-items:center;gap:10px;cursor:pointer;font-size:14px;transition:all 0.2s;font-weight:500;}
+.post-action:hover{color:var(--green3);}
+.post-action.like:hover{color:var(--terracotta);}
+.post-action.like.liked{color:var(--terracotta);}
+.post-action.like.liked .action-icon{animation: heartPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);}
+.post-action .action-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:background 0.2s;font-size:18px;}
+.post-action:hover .action-icon{background:rgba(74,124,89,0.1);}
+.post-action.like:hover .action-icon{background:rgba(196,97,74,0.1);}
+
+/* RIGHT SIDEBAR */
+.right-sidebar{flex:1;padding:24px;display:flex;flex-direction:column;}
+.search-bar{background:rgba(139,94,60,0.06);border-radius:32px;padding:16px 24px;display:flex;align-items:center;gap:16px;margin-bottom:24px;border:1px solid transparent;transition:all 0.3s;}
+.search-bar:focus-within{border-color:var(--earth4);background:#fff;box-shadow:0 8px 24px rgba(139,94,60,0.08);}
+.search-bar input{background:none;border:none;outline:none;font-size:16px;color:var(--earth1);font-family:inherit;flex:1;}
+.search-bar input::placeholder{color:var(--stone);}
+.trending-box{background:rgba(139,94,60,0.03);border-radius:24px;padding:24px;border:1px solid rgba(139,94,60,0.08);}
+.trending-title{font-family:'Playfair Display',serif;font-weight:600;font-size:22px;margin-bottom:20px;color:var(--earth1);}
+.trend-item{margin-bottom:20px;cursor:pointer;transition:transform 0.2s;}
+.trend-item:hover{transform:translateX(4px);}
+.trend-category{font-size:13px;color:var(--stone);margin-bottom:4px;}
+.trend-name{font-weight:700;color:var(--earth1);font-size:16px;margin:2px 0;}
+.trend-count{font-size:13px;color:var(--stone);margin-top:4px;}
+
+/* NOTIF */
+.notif{position:fixed;top:24px;right:24px;z-index:200;background:var(--earth2);color:#F5ECD7;padding:16px 24px;border-radius:16px;font-size:15px;font-weight:500;transform:translateY(-100px);opacity:0;transition:all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);display:flex;align-items:center;gap:12px;box-shadow:0 12px 32px rgba(0,0,0,0.15);}
+.notif.show{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="notif" id="notif">🌿 <span id="notif-text"></span></div>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-card">
+    <div class="logo-icon">🌿</div>
+    <div class="logo-text">Rooted</div>
+    <div class="logo-sub">Join the conversation.</div>
+
+    <div class="phone-phase" id="phonePhase">
+      <div style="font-size:13px;color:rgba(228,201,154,0.8);text-align:left;margin-bottom:10px;font-weight:500;">Your phone number</div>
+      <div class="phone-wrap">
+        <div class="country-code"><span style="font-size:20px;margin-right:6px;">🇮🇳</span> +91</div>
+        <input type="tel" class="phone-input" id="phoneInput" placeholder="98765 43210" maxlength="10">
+      </div>
+      <button class="btn-primary" style="width:100%;border-radius:16px;padding:16px;font-size:16px;" onclick="sendOTP()">Log in</button>
+    </div>
+
+    <div class="otp-phase" id="otpPhase">
+      <div style="font-size:13px;color:rgba(228,201,154,0.8);text-align:left;margin-bottom:16px;">Enter OTP sent to +91 <span id="phoneDisplay"></span></div>
+      <div class="otp-row">
+        <input class="otp-box" maxlength="1" id="o1" oninput="otpMove(this,'o2')" onkeydown="otpBack(event,this,'')">
+        <input class="otp-box" maxlength="1" id="o2" oninput="otpMove(this,'o3')" onkeydown="otpBack(event,this,'o1')">
+        <input class="otp-box" maxlength="1" id="o3" oninput="otpMove(this,'o4')" onkeydown="otpBack(event,this,'o2')">
+        <input class="otp-box" maxlength="1" id="o4" oninput="otpMove(this,'o5')" onkeydown="otpBack(event,this,'o3')">
+        <input class="otp-box" maxlength="1" id="o5" oninput="otpMove(this,'o6')" onkeydown="otpBack(event,this,'o4')">
+        <input class="otp-box" maxlength="1" id="o6" oninput="otpMove(this,'')" onkeydown="otpBack(event,this,'o5')">
+      </div>
+      <button class="btn-primary" style="width:100%;border-radius:16px;padding:16px;font-size:16px;" onclick="verifyOTP()">Verify</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE SETUP -->
+<div class="profile-setup" id="profileSetup">
+  <div class="profile-setup-card">
+    <div class="setup-avatar">🌱</div>
+    <div class="setup-title">Set Up Your Profile</div>
+    <div class="setup-sub">How should people find you?</div>
+    <div class="input-group">
+      <div class="input-label">Display Name</div>
+      <input class="text-input" id="nameInput" placeholder="Priya Sharma" type="text">
+    </div>
+    <div class="input-group">
+      <div class="input-label">Username (Handle)</div>
+      <input class="text-input" id="handleInput" placeholder="@priya_s" type="text">
+    </div>
+    <button class="btn-primary" style="width:100%;margin-top:12px;border-radius:16px;padding:16px;font-size:16px;" onclick="completeSetup()">Start Scrolling</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="app" id="mainApp" style="display:none;">
+  <!-- LEFT SIDEBAR -->
+  <div class="left-sidebar">
+    <div class="app-logo">
+      <div class="logo-icon" style="width:40px;height:40px;font-size:20px;border-radius:12px;">🌿</div>
+      <div style="font-family:'Playfair Display',serif;font-size:26px;color:var(--earth2);font-weight:600;">Rooted</div>
+    </div>
+    
+    <div class="nav-item active"><span class="nav-icon">🏠</span> Home</div>
+    <div class="nav-item"><span class="nav-icon">🔍</span> Explore</div>
+    <div class="nav-item"><span class="nav-icon">🔔</span> Notifications</div>
+    <div class="nav-item"><span class="nav-icon">✉️</span> Messages</div>
+    <div class="nav-item"><span class="nav-icon">👤</span> Profile</div>
+    
+    <button class="btn-primary post-btn-large" onclick="document.getElementById('msgInput').focus()">Post</button>
+    
+    <div class="user-profile-mini">
+      <div class="mini-avatar" id="navAvatar">P</div>
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:16px;color:var(--earth1);" id="navName">Priya</div>
+        <div style="font-size:14px;color:var(--stone);" id="navHandle">@priya</div>
+      </div>
+      <div style="color:var(--stone);font-weight:700;">···</div>
+    </div>
+  </div>
+
+  <!-- MAIN FEED -->
+  <div class="main-feed">
+    <div class="feed-header">
+      <h2>Home</h2>
+    </div>
+    
+    <!-- COMPOSER -->
+    <div class="composer">
+      <div class="composer-avatar" id="composerAvatar">P</div>
+      <div class="composer-body">
+        <textarea class="composer-input" id="msgInput" placeholder="What is happening?!" oninput="autoResize(this)"></textarea>
+        
+        <!-- Upload Preview -->
+        <div class="upload-preview" id="uploadPreview">
+          <span id="uploadIcon" style="font-size:20px;">📄</span>
+          <div style="font-size:14px;color:var(--stone);width:60px;font-weight:500;" id="uploadPct">0%</div>
+          <div class="upload-bar-bg"><div class="upload-bar" id="uploadBar"></div></div>
+          <button style="background:none;border:none;cursor:pointer;color:var(--stone);font-size:18px;padding:4px;" onclick="cancelUpload()">✕</button>
+        </div>
+
+        <div class="composer-actions">
+          <div class="action-icons">
+            <div class="icon-btn" onclick="document.getElementById('photoInput').click()" title="Media (Max 500MB)">📷</div>
+            <div class="icon-btn">📊</div>
+            <div class="icon-btn">😊</div>
+          </div>
+          <button class="btn-primary" id="sendBtn" onclick="createPost()">Post</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- POSTS AREA -->
+    <div class="posts-area" id="postsArea">
+      <!-- Posts render here -->
+    </div>
+  </div>
+
+  <!-- RIGHT SIDEBAR -->
+  <div class="right-sidebar">
+    <div class="search-bar">
+      <span style="font-size:18px;">🔍</span>
+      <input type="text" placeholder="Search Rooted">
+    </div>
+    
+    <div class="trending-box">
+      <div class="trending-title">What's happening</div>
+      
+      <div class="trend-item">
+        <div class="trend-category">Nature · Trending</div>
+        <div class="trend-name">#MonsoonDiaries</div>
+        <div class="trend-count">12.5K Posts</div>
+      </div>
+      
+      <div class="trend-item">
+        <div class="trend-category">Photography · Trending</div>
+        <div class="trend-name">Forest Trails</div>
+        <div class="trend-count">8,204 Posts</div>
+      </div>
+      
+      <div class="trend-item">
+        <div class="trend-category">Local · Indore</div>
+        <div class="trend-name">Patalpani</div>
+        <div class="trend-count">2,100 Posts</div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="photoInput" accept="image/*,video/*" onchange="handleFileUpload(event)" style="display:none;">
+</div>
+
+<script>
+// --- SOCKET.IO INTEGRATION ---
+const socket = io();
+let currentUser = { name: 'You', handle: '@you' };
+
+socket.on('receive_post', (post) => {
+    addPostToFeed(post, true); // prepend to top
+});
+
+socket.on('update_likes', (data) => {
+    const likeCountSpan = document.getElementById(`like-count-${data.id}`);
+    const likeBtn = document.getElementById(`like-btn-${data.id}`);
+    if(likeCountSpan) {
+        likeCountSpan.textContent = data.likes > 0 ? data.likes : '';
+        // Add a subtle animation class
+        likeBtn.classList.remove('liked');
+        void likeBtn.offsetWidth; // trigger reflow
+        likeBtn.classList.add('liked');
+    }
+});
+
+// --- AUTH MOCK ---
+function sendOTP(){
+  document.getElementById('phonePhase').classList.add('hidden');
+  document.getElementById('otpPhase').classList.add('active');
+  document.getElementById('o1').focus();
+}
+
+function otpMove(el,nextId){
+  if(el.value&&nextId)document.getElementById(nextId).focus();
+  const filled=['o1','o2','o3','o4','o5','o6'].every(id=>document.getElementById(id).value);
+  if(filled)setTimeout(verifyOTP,300);
+}
+function otpBack(e,el,prevId){
+  if(e.key==='Backspace'&&!el.value&&prevId)document.getElementById(prevId).focus();
+}
+
+function verifyOTP(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  setTimeout(()=>document.getElementById('profileSetup').classList.add('show'),200);
+}
+
+function completeSetup(){
+  const name = document.getElementById('nameInput').value.trim() || 'Anonymous';
+  let handle = document.getElementById('handleInput').value.trim() || '@user';
+  if(!handle.startsWith('@')) handle = '@' + handle;
+  
+  currentUser = { name, handle };
+  
+  document.getElementById('navName').textContent = name;
+  document.getElementById('navHandle').textContent = handle;
+  document.getElementById('navAvatar').textContent = name.charAt(0).toUpperCase();
+  document.getElementById('composerAvatar').textContent = name.charAt(0).toUpperCase();
+
+  document.getElementById('profileSetup').classList.remove('show');
+  document.getElementById('mainApp').style.display='flex';
+  
+  socket.emit('join', currentUser);
+}
+
+// --- COMPOSER ---
+function autoResize(el){
+  el.style.height='auto';
+  el.style.height=el.scrollHeight+'px';
+}
+
+function createPost(){
+  const input=document.getElementById('msgInput');
+  const text=input.value.trim();
+  if(!text && !pendingMediaUrl) return;
+  
+  socket.emit('create_post', {
+      sender: currentUser.name,
+      handle: currentUser.handle,
+      text: text,
+      mediaUrl: pendingMediaUrl,
+      mediaType: pendingMediaType
+  });
+
+  input.value='';
+  input.style.height='auto';
+  pendingMediaUrl = null;
+  pendingMediaType = null;
+  cancelUpload();
+  showNotif('Your post was sent! 🌿');
+}
+
+function likePost(postId, btnEl) {
+    socket.emit('like_post', postId);
+}
+
+// --- RENDER POST ---
+function addPostToFeed(post, prepend=false){
+  const area=document.getElementById('postsArea');
+  const card=document.createElement('div');
+  card.className='post-card';
+  card.id = `post-${post.id}`;
+  
+  const d = new Date(post.timestamp);
+  const timeStr = d.getHours() + ':' + (d.getMinutes()<10?'0':'') + d.getMinutes();
+  
+  let mediaHtml = '';
+  if (post.mediaUrl) {
+      if (post.mediaType === 'image') {
+          mediaHtml = `<div class="post-media"><img src="${post.mediaUrl}" alt=""></div>`;
+      } else if (post.mediaType === 'video') {
+          mediaHtml = `<div class="post-media"><video src="${post.mediaUrl}" controls></video></div>`;
+      }
+  }
+  
+  let textHtml = '';
+  if (post.text) {
+      const safeText = post.text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
+      textHtml = `<div class="post-text">${safeText}</div>`;
+  }
+  
+  const initial = post.sender.charAt(0).toUpperCase();
+  
+  card.innerHTML = `
+    <div class="post-avatar">${initial}</div>
+    <div class="post-content">
+      <div class="post-header">
+        <span class="post-name">${post.sender}</span>
+        <span class="post-handle">${post.handle}</span>
+        <span class="post-time">${timeStr}</span>
+      </div>
+      ${textHtml}
+      ${mediaHtml}
+      <div class="post-actions">
+        <div class="post-action" onclick="showNotif('Reply coming soon!')">
+          <div class="action-icon">💬</div>
+          <span>0</span>
+        </div>
+        <div class="post-action" onclick="showNotif('Retweet coming soon!')">
+          <div class="action-icon">🔁</div>
+          <span>0</span>
+        </div>
+        <div class="post-action like" id="like-btn-${post.id}" onclick="likePost('${post.id}', this)">
+          <div class="action-icon">❤️</div>
+          <span id="like-count-${post.id}">${post.likes > 0 ? post.likes : ''}</span>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  if(prepend) {
+      area.insertBefore(card, area.firstChild);
+  } else {
+      area.appendChild(card);
+  }
+}
+
+// --- UPLOAD ---
+let pendingMediaUrl = null;
+let pendingMediaType = null;
+
+function handleFileUpload(e){
+  const file=e.target.files[0];if(!file)return;
+  if(file.size>500*1024*1024){showNotif('File too large! Max 500MB');return;}
+  
+  document.getElementById('uploadPreview').classList.add('show');
+  document.getElementById('sendBtn').disabled = true;
+
+  const formData = new FormData();
+  formData.append('media', file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', '/upload', true);
+
+  xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          document.getElementById('uploadBar').style.width = percent + '%';
+          document.getElementById('uploadPct').textContent = percent + '%';
+      }
+  };
+
+  xhr.onload = () => {
+      if (xhr.status === 200) {
+          const res = JSON.parse(xhr.responseText);
+          pendingMediaUrl = res.url;
+          pendingMediaType = res.type;
+          document.getElementById('uploadPct').textContent = 'Attached';
+          document.getElementById('sendBtn').disabled = false;
+      } else {
+          showNotif('Upload failed');
+          cancelUpload();
+      }
+  };
+
+  xhr.onerror = () => {
+      showNotif('Upload failed');
+      cancelUpload();
+  };
+
+  xhr.send(formData);
+  e.target.value='';
+}
+
+function cancelUpload(){
+  pendingMediaUrl = null;
+  pendingMediaType = null;
+  document.getElementById('sendBtn').disabled = false;
+  document.getElementById('uploadPreview').classList.remove('show');
+  document.getElementById('uploadBar').style.width='0%';
+  document.getElementById('uploadPct').textContent='0%';
+}
+
+function showNotif(msg){
+  const n=document.getElementById('notif');
+  document.getElementById('notif-text').textContent=msg;
+  n.classList.add('show');
+  setTimeout(()=>n.classList.remove('show'),2800);
+}
+</script>
+</body>
+</html>
