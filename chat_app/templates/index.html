@@ -183,19 +183,34 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
   .app { flex-direction: column-reverse; height: 100dvh; max-width: 100vw; }
   .right-sidebar { display: none; }
   .left-sidebar { 
-    flex-direction: row; width: 100%; height: 60px; padding: 0; 
+    flex-direction: row; width: 100%; height: 60px; padding: 0 16px; 
     border-right: none; border-top: 1px solid rgba(139,94,60,0.1); 
-    justify-content: space-around; align-items: center; 
+    justify-content: space-between; align-items: center; 
     background: #fff; position: sticky; bottom: 0; z-index: 50;
   }
   .app-logo, .post-btn-large { display: none; }
-  .nav-item { width: auto; height: 100%; margin-bottom: 0; flex: 1; border-radius: 0; }
-  .user-profile-mini { margin-top: 0; width: auto; height: 100%; flex: 1; border-radius: 0; }
+  .nav-item { width: 44px; height: 44px; margin-bottom: 0; flex: none; border-radius: 50%; }
+  .user-profile-mini { margin-top: 0; width: 44px; height: 44px; flex: none; border-radius: 50%; }
   .mini-avatar { width: 32px; height: 32px; }
   .main-feed { max-width: 100vw; border-right: none; }
+  
+  .composer { padding: 16px; gap: 12px; }
+  .composer-avatar { width: 40px; height: 40px; font-size: 16px; }
+  .composer-actions { flex-wrap: wrap; gap: 12px; }
+  .action-icons { gap: 4px; }
+  .icon-btn { width: 36px; height: 36px; font-size: 18px; }
+  
   .post-card { padding: 16px; gap: 12px; }
-  .post-avatar { width: 44px; height: 44px; }
+  .post-avatar { width: 40px; height: 40px; font-size: 16px; }
+  .post-header { flex-wrap: wrap; gap: 4px; }
+  .post-name { font-size: 15px; }
+  .post-handle { font-size: 14px; }
+  .post-time { font-size: 14px; }
   .post-media img, .post-media video { max-height: 300px; }
+  .post-actions { padding: 0; margin-top: 12px; }
+  .post-action { font-size: 13px; gap: 4px; }
+  .post-action .action-icon { width: 32px; height: 32px; font-size: 16px; }
+  
   .mobile-fab {
     display: flex; position: fixed; bottom: 80px; right: 24px;
     width: 56px; height: 56px; border-radius: 50%;
