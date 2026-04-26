@@ -67,9 +67,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
   box-shadow: 0 24px 64px rgba(0,0,0,0.2);
   animation: floatUp 0.8s ease-out;
 }
-.logo-icon{width:48px;height:48px;background:linear-gradient(135deg,var(--green4),var(--earth4));border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 8px 16px rgba(0,0,0,0.1);}
-.logo-text{font-family:'Playfair Display',serif;font-size:32px;color:#F5ECD7;font-weight:600;margin-top:12px;}
-.logo-sub{font-size:14px;color:rgba(228,201,154,0.8);margin-bottom:36px;letter-spacing:1.5px;text-transform:uppercase;}
+.logo-icon{width:52px;height:52px;background:linear-gradient(145deg,#3d7a52,#2a5c3a);border-radius:18px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 8px 24px rgba(42,92,58,0.35), inset 0 1px 0 rgba(255,255,255,0.15);}
+.logo-text{font-family:'Playfair Display',serif;font-size:32px;color:#F5ECD7;font-weight:700;margin-top:12px;letter-spacing:-0.5px;}
+.logo-sub{font-size:13px;color:rgba(228,201,154,0.7);margin-bottom:36px;letter-spacing:2px;text-transform:uppercase;}
 
 .phone-wrap{display:flex;gap:0;margin-bottom:16px;border:1px solid rgba(228,201,154,0.2);border-radius:16px;overflow:hidden;background:rgba(255,255,255,0.05);transition:border-color 0.3s;}
 .phone-wrap:focus-within{border-color:var(--earth4);background:rgba(255,255,255,0.08);}
@@ -106,8 +106,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
 .nav-item{display:flex;align-items:center;justify-content:center;width:50px;height:50px;border-radius:50%;color:var(--earth1);cursor:pointer;transition:all 0.2s;margin-bottom:8px;position:relative;}
 .nav-item:hover{background:rgba(139,94,60,0.06);}
 .nav-item.active .nav-icon{color:var(--earth1);} /* We can style active state if needed */
-.nav-icon{font-size:26px;transition:transform 0.2s;}
-.nav-item:hover .nav-icon{transform:scale(1.1);}
+.nav-svg{color:var(--stone);transition:all 0.2s;}
+.nav-item:hover .nav-svg{color:var(--earth1); transform:scale(1.08);}
+.nav-item.active .nav-svg{color:var(--earth1);}
 .post-btn-large{width:52px;height:52px;margin-top:24px;padding:0;font-size:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
 .user-profile-mini{margin-top:auto;width:52px;height:52px;display:flex;align-items:center;justify-content:center;border-radius:50%;cursor:pointer;transition:all 0.2s;}
 .user-profile-mini:hover{background:rgba(139,94,60,0.08);}
@@ -256,10 +257,19 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
 {% if not current_user %}
 <div class="login-screen" id="loginScreen">
   <div class="login-card">
-    <div class="logo-icon">🌿</div>
+    <div class="logo-icon">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C12 2 4 7 4 13.5C4 17.642 7.582 21 12 21C16.418 21 20 17.642 20 13.5C20 7 12 2 12 2Z" fill="rgba(255,255,255,0.95)"/>
+        <path d="M12 21V24" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8.5 16.5C8.5 16.5 9.8 14.5 12 14.5C14.2 14.5 15.5 16.5 15.5 16.5" stroke="rgba(42,92,58,0.55)" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
     <div class="logo-text">Rooted</div>
-    <div class="logo-sub">Join the conversation.</div>
-    <a href="/login/google" class="btn-primary" style="display:block; text-align:center; width:100%; border-radius:16px; padding:16px; font-size:16px; text-decoration:none; margin-top:24px;">Sign in with Google</a>
+    <div class="logo-sub">Where stories take root.</div>
+    <a href="/login/google" class="btn-primary" style="display:flex; align-items:center; justify-content:center; gap:10px; width:100%; border-radius:16px; padding:16px; font-size:16px; text-decoration:none; margin-top:24px; box-sizing:border-box;">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#fff" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="rgba(255,255,255,0.85)" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="rgba(255,255,255,0.7)" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="rgba(255,255,255,0.9)" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Sign in with Google
+    </a>
   </div>
 </div>
 {% else %}
@@ -268,24 +278,54 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
 <div class="app" id="mainApp">
   <!-- LEFT SIDEBAR -->
   <div class="left-sidebar">
-    <div class="app-logo">
-      <div class="logo-icon" style="width:40px;height:40px;font-size:20px;border-radius:12px;">🌿</div>
+    <div class="app-logo" onclick="switchTab('feedView')" title="Rooted">
+      <div class="logo-icon" style="width:42px;height:42px;border-radius:14px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 3C12 3 5 7 5 13C5 16.866 8.134 20 12 20C15.866 20 19 16.866 19 13C19 7 12 3 12 3Z" fill="rgba(255,255,255,0.9)"/>
+          <path d="M12 20V23" stroke="rgba(255,255,255,0.7)" stroke-width="2" stroke-linecap="round"/>
+          <path d="M9 16C9 16 10 14 12 14C14 14 15 16 15 16" stroke="rgba(42,92,58,0.6)" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
     </div>
     
-    <div class="nav-item active" onclick="switchTab('feedView')" title="Home"><span class="nav-icon">🏠</span></div>
-    <div class="nav-item" onclick="switchTab('explore')" title="Explore Nodes"><span class="nav-icon">🔍</span></div>
-    <div class="nav-item" onclick="openNotifications()" title="Notifications"><span class="nav-icon">🔔</span><div class="unread-badge" id="notifBadge" style="display:none;">0</div></div>
-    <div class="nav-item" onclick="openMessages()" title="Messages"><span class="nav-icon">✉️</span><div class="unread-badge" id="navBadge" style="display:none;">0</div></div>
-    <div class="nav-item" onclick="switchTab('money')" title="Rooted Money"><span class="nav-icon">💸</span></div>
-    <div class="nav-item" onclick="switchTab('jobs')" title="Rooted Jobs"><span class="nav-icon">💼</span></div>
-    <div class="nav-item" onclick="switchTab('ai')" title="Rooted AI Assistant"><span class="nav-icon">🤖</span></div>
-    <div class="nav-item" onclick="goToMyProfile()" title="Profile"><span class="nav-icon">👤</span></div>
+    <div class="nav-item active" onclick="switchTab('feedView')" title="Home">
+      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3 12L12 3L21 12V20C21 20.5523 20.5523 21 20 21H15V16H9V21H4C3.44772 21 3 20.5523 3 20V12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="nav-item" onclick="switchTab('explore')" title="Explore">
+      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <div class="nav-item" onclick="openNotifications()" title="Notifications" style="position:relative;">
+      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M15 17H20L18.5951 15.5951C18.2141 15.2141 18 14.6973 18 14.1585V11C18 8.38757 16.3304 6.16509 14 5.34142V5C14 3.89543 13.1046 3 12 3C10.8954 3 10 3.89543 10 5V5.34142C7.66962 6.16509 6 8.38757 6 11V14.1585C6 14.6973 5.78595 15.2141 5.40493 15.5951L4 17H9M15 17H9M15 17C15 18.6569 13.6569 20 12 20C10.3431 20 9 18.6569 9 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="unread-badge" id="notifBadge" style="display:none;">0</div>
+    </div>
+    <div class="nav-item" onclick="openMessages()" title="Messages" style="position:relative;">
+      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M21 15C21 15.5304 20.7893 16.0391 20.4142 16.4142C20.0391 16.7893 19.5304 17 19 17H7L3 21V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H19C19.5304 3 20.0391 3.21071 20.4142 3.58579C20.7893 3.96086 21 4.46957 21 5V15Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      <div class="unread-badge" id="navBadge" style="display:none;">0</div>
+    </div>
+    <div class="nav-item" onclick="switchTab('money')" title="Rooted Money">
+      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2"/><path d="M2 10H22" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="15" r="1.5" fill="currentColor"/></svg>
+    </div>
+    <div class="nav-item" onclick="switchTab('jobs')" title="Rooted Jobs">
+      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M20 7H4C2.89543 7 2 7.89543 2 9V19C2 20.1046 2.89543 21 4 21H20C21.1046 21 22 20.1046 22 19V9C22 7.89543 21.1046 7 20 7Z" stroke="currentColor" stroke-width="2"/><path d="M16 7V5C16 3.89543 15.1046 3 14 3H10C8.89543 3 8 3.89543 8 5V7" stroke="currentColor" stroke-width="2"/><path d="M12 12V16M10 14H14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <div class="nav-item" onclick="switchTab('ai')" title="Rooted AI">
+      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><rect x="3" y="11" width="18" height="10" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="16" r="1.5" fill="currentColor"/><path d="M6 8H4M20 8H18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <div class="nav-item" onclick="goToMyProfile()" title="My Profile">
+      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20C4 17.2386 7.58172 15 12 15C16.4183 15 20 17.2386 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
     
-    <button class="btn-primary post-btn-large" onclick="document.getElementById('msgInput').focus()" title="Post">💬</button>
+    <button class="btn-primary post-btn-large" onclick="document.getElementById('msgInput').focus()" title="New Post">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M12 5V19M5 12H19" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>
+    </button>
     
-    <a href="/logout" style="text-decoration:none;"><div class="nav-item" title="Log Out"><span class="nav-icon">🚪</span></div></a>
+    <a href="/logout" style="text-decoration:none; margin-top:4px;">
+      <div class="nav-item" title="Log Out" style="color:var(--stone);">
+        <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V5C3 4.46957 3.21071 3.96086 3.58579 3.58579C3.96086 3.21071 4.46957 3 5 3H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="16 17 21 12 16 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><line x1="21" y1="12" x2="9" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+    </a>
     
-    <div class="user-profile-mini" title="Your Profile" onclick="openProfileEdit()">
+    <div class="user-profile-mini" title="Edit Profile" onclick="openProfileEdit()">
       {% if current_user.photo %}
       <img src="{{ current_user.photo }}" class="mini-avatar" id="navAvatar" style="object-fit:cover;">
       {% else %}
@@ -582,47 +622,89 @@ function saveProfile() {
     const bioVal = document.getElementById('editProfileBio').value.trim();
     const isPrivate = document.getElementById('editProfilePrivate').checked;
     
+    const doSave = (formData) => {
+        fetch('/upload', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            if(data.success) {
+                // --- Update currentUser object in-memory ---
+                currentUser.name = nameVal || currentUser.name;
+                currentUser.bio = bioVal;
+                currentUser.is_private = isPrivate;
+                if(data.url) currentUser.photo = data.url;
+
+                // --- Update navbar avatar ---
+                const navAvatar = document.getElementById('navAvatar');
+                if(currentUser.photo) {
+                    if(navAvatar.tagName === 'DIV') {
+                        // replace div with img
+                        const img = document.createElement('img');
+                        img.src = currentUser.photo;
+                        img.className = 'mini-avatar';
+                        img.id = 'navAvatar';
+                        img.style.objectFit = 'cover';
+                        navAvatar.replaceWith(img);
+                    } else {
+                        navAvatar.src = currentUser.photo;
+                    }
+                } else {
+                    navAvatar.textContent = currentUser.name[0].toUpperCase();
+                }
+
+                // --- Update composer avatar ---
+                const compAvatar = document.getElementById('composerAvatar');
+                if(compAvatar && currentUser.photo) {
+                    compAvatar.innerHTML = `<img src="${currentUser.photo}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                } else if(compAvatar) {
+                    compAvatar.textContent = currentUser.name[0].toUpperCase();
+                }
+
+                // --- If profile view is open for current user, update it too ---
+                const pHandle = document.getElementById('profileViewHandle');
+                if(pHandle && pHandle.innerText === currentUser.handle) {
+                    document.getElementById('profileViewName').innerText = currentUser.name;
+                    document.getElementById('profileViewBio').innerText = currentUser.bio;
+                    const pAvatar = document.getElementById('profileViewAvatar');
+                    if(pAvatar && currentUser.photo) pAvatar.src = currentUser.photo;
+                }
+
+                // Close modal and show toast
+                document.getElementById('profileEditModal').style.display = 'none';
+                showNotif('Profile updated! ✅');
+                btn.innerText = 'Save Profile';
+                
+                // Destroy cropper so it doesn't linger
+                if(cropper) { cropper.destroy(); cropper = null; }
+                document.getElementById('profileCropImage').style.display = 'none';
+            } else {
+                alert('Save failed: ' + (data.error || 'Unknown error'));
+                btn.innerText = 'Save Profile';
+            }
+        })
+        .catch(() => {
+            alert('Network error saving profile.');
+            btn.innerText = 'Save Profile';
+        });
+    };
+
     if(!cropper) {
-        // Just text changes
         const formData = new FormData();
         formData.append('type', 'profile');
         formData.append('name', nameVal);
         formData.append('bio', bioVal);
-        formData.append('is_private', isPrivate);
-        
-        fetch('/upload', { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                window.location.reload();
-            } else {
-                alert('Upload failed: ' + data.error);
-                btn.innerText = 'Save Profile';
-            }
-        });
-        return;
+        formData.append('is_private', String(isPrivate));
+        doSave(formData);
+    } else {
+        cropper.getCroppedCanvas({width: 240, height: 240}).toBlob((blob) => {
+            const formData = new FormData();
+            formData.append('media', blob, 'profile.jpg');
+            formData.append('type', 'profile');
+            formData.append('name', nameVal);
+            formData.append('bio', bioVal);
+            formData.append('is_private', String(isPrivate));
+            doSave(formData);
+        }, 'image/jpeg', 0.92);
     }
-    
-    // With Image Cropper
-    cropper.getCroppedCanvas({width: 200, height: 200}).toBlob((blob) => {
-        const formData = new FormData();
-        formData.append('media', blob, 'profile.jpg');
-        formData.append('type', 'profile');
-        formData.append('name', nameVal);
-        formData.append('bio', bioVal);
-        formData.append('is_private', isPrivate);
-        
-        fetch('/upload', { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(data => {
-            if(data.success) {
-                window.location.reload();
-            } else {
-                alert('Upload failed: ' + data.error);
-                btn.innerText = 'Save Profile';
-            }
-        });
-    }, 'image/jpeg', 0.9);
 }
 
 // --- COMPOSER ---
@@ -792,7 +874,13 @@ function addPostToFeed(post, prepend=false, targetId='postsArea'){
       }
   }
   
-  const initial = post.sender.charAt(0).toUpperCase();
+  let avatarHtml = '';
+  if (post.senderPhoto) {
+      avatarHtml = `<img src="${post.senderPhoto}" class="post-avatar" style="object-fit:cover;">`;
+  } else {
+      const initial = post.sender.charAt(0).toUpperCase();
+      avatarHtml = `<div class="post-avatar">${initial}</div>`;
+  }
   
   let metaHtml = '';
   if (post.isRetweet && post.retweetedFrom) {
@@ -805,7 +893,7 @@ function addPostToFeed(post, prepend=false, targetId='postsArea'){
     <div style="display:flex; flex-direction:column; width:100%">
       ${metaHtml}
       <div style="display:flex; gap:16px;">
-        <div class="post-avatar">${initial}</div>
+        ${avatarHtml}
         <div class="post-content">
           <div class="post-header">
             <span class="post-name" onclick="openProfile('${post.handle}', '${post.sender}')">${post.sender}</span>

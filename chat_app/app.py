@@ -289,6 +289,43 @@ def get_user_profile(handle):
         'is_self': current_user.is_authenticated and current_user.id == user.id
     })
 
+def post_to_dict(p):
+    user = User.query.filter_by(handle=p.handle).first()
+    sender_name = user.display_name if user else p.sender
+    sender_photo = user.profile_photo_url if user else None
+    
+    reply_to_handle = None
+    if p.parent_id:
+        parent_post = Post.query.get(p.parent_id)
+        if parent_post:
+            reply_to_handle = parent_post.handle
+            
+    retweeted_from = None
+    if p.is_retweet and p.original_post_id:
+        orig = Post.query.get(p.original_post_id)
+        if orig:
+            retweeted_from = orig.handle
+            
+    return {
+        'id': p.id,
+        'sender': sender_name,
+        'senderPhoto': sender_photo,
+        'handle': p.handle,
+        'text': p.text,
+        'mediaUrl': p.media_url,
+        'mediaType': p.media_type,
+        'timestamp': p.timestamp,
+        'likes': p.likes,
+        'bookmarks': p.bookmarks,
+        'replyCount': getattr(p, 'reply_count', 0),
+        'node': p.node,
+        'parentId': p.parent_id,
+        'replyToHandle': reply_to_handle,
+        'isRetweet': p.is_retweet,
+        'originalPostId': p.original_post_id,
+        'retweetedFrom': retweeted_from
+    }
+
 @app.route('/api/posts/following')
 @login_required
 def get_following_posts():
@@ -298,24 +335,7 @@ def get_following_posts():
     
     posts = Post.query.filter(Post.sender.in_([User.query.get(i).handle for i in followed_ids])).order_by(Post.timestamp.desc()).limit(100).all()
     
-    res = []
-    for p in posts:
-        res.append({
-            'id': p.id,
-            'sender': p.sender,
-            'handle': p.handle,
-            'text': p.text,
-            'mediaUrl': p.media_url,
-            'mediaType': p.media_type,
-            'timestamp': p.timestamp,
-            'likes': p.likes,
-            'bookmarks': p.bookmarks,
-            'replyCount': p.reply_count,
-            'node': p.node,
-            'parentId': p.parent_id,
-            'isRetweet': p.is_retweet,
-            'originalPostId': p.original_post_id
-        })
+    res = [post_to_dict(p) for p in posts]
     return jsonify(res)
 
 @app.route('/api/follow/<handle>', methods=['POST'])
@@ -532,36 +552,7 @@ def handle_join(user_data):
     visible_posts.sort(key=get_score, reverse=True)
     # Send top 100
     for p in visible_posts[:100]:
-        reply_to_handle = None
-        if p.parent_id:
-            parent_post = Post.query.get(p.parent_id)
-            if parent_post:
-                reply_to_handle = parent_post.handle
-                
-        retweeted_from = None
-        if p.is_retweet and p.original_post_id:
-            orig = Post.query.get(p.original_post_id)
-            if orig:
-                retweeted_from = orig.handle
-                
-        post_data = {
-            'id': p.id,
-            'sender': p.sender,
-            'handle': p.handle,
-            'text': p.text,
-            'mediaUrl': p.media_url,
-            'mediaType': p.media_type,
-            'timestamp': p.timestamp,
-            'likes': p.likes,
-            'bookmarks': p.bookmarks,
-            'node': p.node,
-            'parentId': p.parent_id,
-            'replyToHandle': reply_to_handle,
-            'isRetweet': p.is_retweet,
-            'originalPostId': p.original_post_id,
-            'retweetedFrom': retweeted_from
-        }
-        emit('receive_post', post_data)
+        emit('receive_post', post_to_dict(p))
 
 @socketio.on('create_post')
 def handle_create_post(data):
@@ -608,17 +599,10 @@ def handle_create_post(data):
     db.session.add(post)
     db.session.commit()
     
-    reply_to_handle = None
-    if post.parent_id:
-        parent_post = Post.query.get(post.parent_id)
-        if parent_post:
-            reply_to_handle = parent_post.handle
-            
-    retweeted_from = None
+    # Notification for Retweet
     if post.is_retweet and post.original_post_id:
         orig = Post.query.get(post.original_post_id)
         if orig:
-            retweeted_from = orig.handle
             target_user = User.query.filter_by(handle=orig.handle).first()
             if target_user and target_user.handle != handle:
                 n = Notification(user_id=target_user.id, type='retweet', content=f"{sender} retweeted your post.", timestamp=int(time.time() * 1000))
@@ -628,25 +612,7 @@ def handle_create_post(data):
                 socketio.emit('receive_notification', n.to_dict(), room=f"user_{target_user.id}")
                 db.session.commit()
             
-            
-    post_data = {
-        'id': post.id,
-        'sender': post.sender,
-        'handle': post.handle,
-        'text': post.text,
-        'mediaUrl': post.media_url,
-        'mediaType': post.media_type,
-        'timestamp': post.timestamp,
-        'likes': post.likes,
-        'bookmarks': post.bookmarks,
-        'node': post.node,
-        'parentId': post.parent_id,
-        'replyToHandle': reply_to_handle,
-        'isRetweet': post.is_retweet,
-        'originalPostId': post.original_post_id,
-        'retweetedFrom': retweeted_from
-    }
-    emit('receive_post', post_data, broadcast=True)
+    emit('receive_post', post_to_dict(post), broadcast=True)
 
 @socketio.on('bookmark_post')
 def handle_bookmark_post(post_id):
