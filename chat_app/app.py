@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify, url_for, redirect
 from flask_socketio import SocketIO, emit
 from werkzeug.utils import secure_filename
+from werkzeug.middleware.proxy_fix import ProxyFix
 import time
 from flask_sqlalchemy import SQLAlchemy
 import cloudinary
@@ -14,6 +15,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 load_dotenv()
 
 app = Flask(__name__)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'secret!')
 # 500 MB max upload size
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
