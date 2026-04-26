@@ -56,6 +56,11 @@ followers = db.Table('followers',
     db.Column('followed_id', db.Integer, db.ForeignKey('user.id'))
 )
 
+follow_requests = db.Table('follow_requests',
+    db.Column('requester_id', db.Integer, db.ForeignKey('user.id')),
+    db.Column('requested_id', db.Integer, db.ForeignKey('user.id'))
+)
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     uuid = db.Column(db.String(36), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
@@ -72,6 +77,12 @@ class User(db.Model, UserMixin):
         primaryjoin=(followers.c.follower_id == id),
         secondaryjoin=(followers.c.followed_id == id),
         backref=db.backref('followers', lazy='dynamic'), lazy='dynamic')
+        
+    requests_sent = db.relationship(
+        'User', secondary=follow_requests,
+        primaryjoin=(follow_requests.c.requester_id == id),
+        secondaryjoin=(follow_requests.c.requested_id == id),
+        backref=db.backref('requests_received', lazy='dynamic'), lazy='dynamic')
         
     def is_following(self, user):
         return self.followed.filter_by(id=user.id).first() is not None
@@ -102,6 +113,33 @@ class Message(db.Model):
     text = db.Column(db.String(1000))
     timestamp = db.Column(db.Integer)
     read = db.Column(db.Boolean, default=False)
+
+class Notification(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Owner
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id')) # Triggers it
+    type = db.Column(db.String(50), nullable=False) # follow, follow_request, like, retweet, message
+    content = db.Column(db.String(250))
+    is_read = db.Column(db.Boolean, default=False)
+    timestamp = db.Column(db.Integer)
+    
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('notifications', lazy='dynamic', cascade='all, delete-orphan'))
+    sender = db.relationship('User', foreign_keys=[sender_id])
+    
+    def to_dict(self):
+        sender_handle = self.sender.handle if self.sender else None
+        sender_name = self.sender.display_name if self.sender else None
+        sender_photo = self.sender.profile_photo_url if self.sender else None
+        return {
+            'id': self.id,
+            'type': self.type,
+            'content': self.content,
+            'is_read': self.is_read,
+            'timestamp': self.timestamp,
+            'sender_handle': sender_handle,
+            'sender_name': sender_name,
+            'sender_photo': sender_photo
+        }
 
 class Post(db.Model):
     id = db.Column(db.String(50), primary_key=True)
@@ -232,9 +270,11 @@ def get_user_profile(handle):
         
     is_following = False
     is_mutual = False
+    is_requested = False
     if current_user.is_authenticated:
         is_following = current_user.is_following(user)
         is_mutual = is_following and user.is_following(current_user)
+        is_requested = user in current_user.requests_sent
         
     return jsonify({
         'handle': user.handle,
@@ -245,6 +285,7 @@ def get_user_profile(handle):
         'following_count': user.followed.count(),
         'is_following': is_following,
         'is_mutual': is_mutual,
+        'is_requested': is_requested,
         'is_self': current_user.is_authenticated and current_user.id == user.id
     })
 
@@ -283,9 +324,26 @@ def follow_user(handle):
     user = User.query.filter_by(handle=handle).first()
     if not user or user == current_user:
         return jsonify({'error': 'Invalid action'}), 400
-    current_user.follow(user)
-    db.session.commit()
-    return jsonify({'success': True})
+        
+    ts = int(time.time() * 1000)
+    
+    if user.is_private:
+        # Check if request already sent
+        existing = Notification.query.filter_by(user_id=user.id, sender_id=current_user.id, type='follow_request').first()
+        if not existing:
+            current_user.requests_sent.append(user)
+            n = Notification(user_id=user.id, sender_id=current_user.id, type='follow_request', content=f"{current_user.display_name} requested to follow you.", timestamp=ts)
+            db.session.add(n)
+            socketio.emit('receive_notification', n.to_dict(), room=f"user_{user.id}")
+            db.session.commit()
+        return jsonify({'success': True, 'status': 'requested'})
+    else:
+        current_user.follow(user)
+        n = Notification(user_id=user.id, sender_id=current_user.id, type='follow', content=f"{current_user.display_name} started following you.", timestamp=ts)
+        db.session.add(n)
+        socketio.emit('receive_notification', n.to_dict(), room=f"user_{user.id}")
+        db.session.commit()
+        return jsonify({'success': True, 'status': 'following'})
 
 @app.route('/api/unfollow/<handle>', methods=['POST'])
 @login_required
@@ -293,7 +351,60 @@ def unfollow_user(handle):
     user = User.query.filter_by(handle=handle).first()
     if not user:
         return jsonify({'error': 'User not found'}), 404
+        
+    # Remove from requests if pending
+    if user in current_user.requests_sent:
+        current_user.requests_sent.remove(user)
+        n = Notification.query.filter_by(user_id=user.id, sender_id=current_user.id, type='follow_request').first()
+        if n: db.session.delete(n)
+        
     current_user.unfollow(user)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/follow/accept/<handle>', methods=['POST'])
+@login_required
+def accept_follow(handle):
+    sender = User.query.filter_by(handle=handle).first()
+    if not sender or current_user not in sender.requests_sent:
+        return jsonify({'error': 'Invalid request'}), 400
+        
+    sender.requests_sent.remove(current_user)
+    sender.follow(current_user)
+    
+    # Mark notification as read/handled
+    n = Notification.query.filter_by(user_id=current_user.id, sender_id=sender.id, type='follow_request').first()
+    if n:
+        n.type = 'follow'
+        n.content = f"{sender.display_name} started following you."
+        n.is_read = True
+    
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/follow/decline/<handle>', methods=['POST'])
+@login_required
+def decline_follow(handle):
+    sender = User.query.filter_by(handle=handle).first()
+    if sender and current_user in sender.requests_sent:
+        sender.requests_sent.remove(current_user)
+        n = Notification.query.filter_by(user_id=current_user.id, sender_id=sender.id, type='follow_request').first()
+        if n: db.session.delete(n)
+        db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/notifications')
+@login_required
+def get_notifications():
+    notifs = current_user.notifications.order_by(Notification.timestamp.desc()).limit(50).all()
+    return jsonify([n.to_dict() for n in notifs])
+
+@app.route('/api/notifications/read', methods=['POST'])
+@login_required
+def mark_notifications_read():
+    unread = current_user.notifications.filter_by(is_read=False).all()
+    for n in unread:
+        n.is_read = True
     db.session.commit()
     return jsonify({'success': True})
 
@@ -370,6 +481,14 @@ def send_dm(data):
     msg = Message(conversation_id=conv.id, sender_id=current_user.id, text=text, timestamp=ts)
     conv.updated_at = ts
     db.session.add(msg)
+    
+    # Notification for Message
+    existing_notif = Notification.query.filter_by(user_id=target_user.id, sender_id=current_user.id, type='message', is_read=False).first()
+    if not existing_notif:
+        n = Notification(user_id=target_user.id, sender_id=current_user.id, type='message', content=f"{current_user.display_name} sent you a message.", timestamp=ts)
+        db.session.add(n)
+        socketio.emit('receive_notification', n.to_dict(), room=f"user_{target_user.id}")
+        
     db.session.commit()
     
     payload = {
@@ -455,6 +574,19 @@ def handle_create_post(data):
         parent_post = Post.query.get(parent_id)
         if parent_post:
             parent_post.reply_count += 1
+            
+            # Notification for Reply
+            target_user = User.query.filter_by(handle=parent_post.handle).first()
+            if target_user and target_user.handle != handle:
+                n = Notification(user_id=target_user.id, type='reply', content=f"{sender} replied to your post.", timestamp=int(time.time() * 1000))
+                
+                # Check if sender is logged in to attach sender_id
+                if current_user.is_authenticated:
+                    n.sender_id = current_user.id
+                    
+                db.session.add(n)
+                socketio.emit('receive_notification', n.to_dict(), room=f"user_{target_user.id}")
+                
             db.session.commit()
             
     post = Post(
@@ -487,6 +619,15 @@ def handle_create_post(data):
         orig = Post.query.get(post.original_post_id)
         if orig:
             retweeted_from = orig.handle
+            target_user = User.query.filter_by(handle=orig.handle).first()
+            if target_user and target_user.handle != handle:
+                n = Notification(user_id=target_user.id, type='retweet', content=f"{sender} retweeted your post.", timestamp=int(time.time() * 1000))
+                if current_user.is_authenticated:
+                    n.sender_id = current_user.id
+                db.session.add(n)
+                socketio.emit('receive_notification', n.to_dict(), room=f"user_{target_user.id}")
+                db.session.commit()
+            
             
     post_data = {
         'id': post.id,
@@ -519,6 +660,13 @@ def handle_like_post(post_id):
     post = Post.query.get(post_id)
     if post:
         post.likes += 1
+        
+        target_user = User.query.filter_by(handle=post.handle).first()
+        if target_user and current_user.is_authenticated and target_user.id != current_user.id:
+            n = Notification(user_id=target_user.id, sender_id=current_user.id, type='like', content=f"{current_user.display_name} liked your post.", timestamp=int(time.time() * 1000))
+            db.session.add(n)
+            socketio.emit('receive_notification', n.to_dict(), room=f"user_{target_user.id}")
+            
         db.session.commit()
         emit('update_likes', {'id': post_id, 'likes': post.likes}, broadcast=True)
 

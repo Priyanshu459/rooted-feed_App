@@ -274,6 +274,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
     
     <div class="nav-item active" onclick="switchTab('feedView')" title="Home"><span class="nav-icon">🏠</span></div>
     <div class="nav-item" onclick="switchTab('explore')" title="Explore Nodes"><span class="nav-icon">🔍</span></div>
+    <div class="nav-item" onclick="openNotifications()" title="Notifications"><span class="nav-icon">🔔</span><div class="unread-badge" id="notifBadge" style="display:none;">0</div></div>
     <div class="nav-item" onclick="openMessages()" title="Messages"><span class="nav-icon">✉️</span><div class="unread-badge" id="navBadge" style="display:none;">0</div></div>
     <div class="nav-item" onclick="switchTab('money')" title="Rooted Money"><span class="nav-icon">💸</span></div>
     <div class="nav-item" onclick="switchTab('jobs')" title="Rooted Jobs"><span class="nav-icon">💼</span></div>
@@ -396,6 +397,17 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--earth1
     <div style="padding:16px 24px; border-top:1px solid rgba(139,94,60,0.1); display:flex; gap:12px; background:#fff;">
         <input type="text" id="chatInput" placeholder="Start a new message" style="flex:1; padding:12px 20px; border-radius:24px; border:1px solid rgba(139,94,60,0.2); outline:none; font-size:15px;" onkeydown="if(event.key==='Enter') sendDM()">
         <button class="btn-primary" style="padding:0 24px; border-radius:24px; font-weight:600;" onclick="sendDM()">Send</button>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS VIEW -->
+  <div class="main-feed" id="notificationsView" style="display:none; flex-direction:column; background:#fff;">
+    <div class="feed-header" style="display:flex; justify-content:space-between; align-items:center;">
+      <h2 style="font-size:20px; font-weight:700;">Notifications</h2>
+      <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:24px;">✕</div>
+    </div>
+    <div id="notifList" style="flex:1; overflow-y:auto; padding:0;">
+        <!-- notifications load here -->
     </div>
   </div>
 
@@ -697,7 +709,7 @@ function switchTab(tab) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     if(event && event.currentTarget) event.currentTarget.classList.add('active');
     
-    const views = ['feedView', 'mockView', 'profileView', 'messagesView', 'chatView'];
+    const views = ['feedView', 'mockView', 'profileView', 'messagesView', 'chatView', 'notificationsView'];
     views.forEach(v => {
         const el = document.getElementById(v);
         if(el) el.style.display = 'none';
@@ -912,15 +924,34 @@ function showNotif(msg){
 function toggleFollow() {
     const handle = document.getElementById('profileViewHandle').textContent.replace('@','');
     const isFollowing = document.getElementById('followBtn').textContent === 'Unfollow';
+    
+    // Check if it's a requested state
+    if(document.getElementById('followBtn').textContent === 'Requested') {
+        const endpoint = `/api/unfollow/${handle}`;
+        fetch(endpoint, {method:'POST'}).then(r => r.json()).then(data => {
+            if(data.success) {
+                document.getElementById('followBtn').textContent = 'Follow';
+                document.getElementById('followBtn').style.background = 'var(--green3)';
+            }
+        });
+        return;
+    }
+    
     const endpoint = isFollowing ? `/api/unfollow/${handle}` : `/api/follow/${handle}`;
     
     fetch(endpoint, {method:'POST'})
     .then(r => r.json())
     .then(data => {
         if(data.success) {
-            document.getElementById('followBtn').textContent = isFollowing ? 'Follow' : 'Unfollow';
-            document.getElementById('followBtn').style.background = isFollowing ? 'var(--green3)' : 'var(--stone)';
-            openProfile(handle, document.getElementById('profileViewName').textContent); // refresh
+            if (data.status === 'requested') {
+                document.getElementById('followBtn').textContent = 'Requested';
+                document.getElementById('followBtn').style.background = 'var(--stone)';
+                showNotif('Follow request sent');
+            } else {
+                document.getElementById('followBtn').textContent = isFollowing ? 'Follow' : 'Unfollow';
+                document.getElementById('followBtn').style.background = isFollowing ? 'var(--green3)' : 'var(--stone)';
+                openProfile(handle, document.getElementById('profileViewName').textContent); // refresh
+            }
         }
     });
 }
@@ -1045,12 +1076,98 @@ socket.on('message_error', function(err) {
     showNotif(err.error);
 });
 
+// --- NOTIFICATIONS SYSTEM ---
+let unreadNotifs = 0;
+
+function openNotifications() {
+    switchTab('notificationsView');
+    fetchNotifications();
+    document.getElementById('notifBadge').style.display = 'none';
+    unreadNotifs = 0;
+    
+    // Mark as read on server
+    fetch('/api/notifications/read', {method: 'POST'});
+}
+
+function fetchNotifications() {
+    fetch('/api/notifications')
+    .then(r => r.json())
+    .then(notifs => {
+        const nl = document.getElementById('notifList');
+        nl.innerHTML = '';
+        notifs.forEach(n => {
+            const item = document.createElement('div');
+            item.className = 'conv-item';
+            if(!n.is_read) item.style.background = 'rgba(139,94,60,0.05)';
+            
+            let photoHtml = n.sender_photo ? `<img src="${n.sender_photo}" class="mini-avatar" style="object-fit:cover;">` : (n.sender_name ? `<div class="mini-avatar">${n.sender_name[0].toUpperCase()}</div>` : `<div class="mini-avatar">?</div>`);
+            
+            let actionsHtml = '';
+            if(n.type === 'follow_request') {
+                actionsHtml = `
+                    <div style="display:flex; gap:8px; margin-top:8px;">
+                        <button class="btn-primary" style="padding:6px 12px; font-size:13px; border-radius:16px;" onclick="acceptFollow('${n.sender_handle}', event)">Accept</button>
+                        <button style="padding:6px 12px; font-size:13px; border-radius:16px; background:var(--stone); color:white; border:none; cursor:pointer;" onclick="declineFollow('${n.sender_handle}', event)">Decline</button>
+                    </div>
+                `;
+            }
+            
+            item.innerHTML = `
+                ${photoHtml}
+                <div style="flex:1;">
+                    <div style="color:var(--earth1); font-size:15px;">${n.content}</div>
+                    ${actionsHtml}
+                </div>
+            `;
+            if (n.sender_handle) {
+                item.onclick = (e) => {
+                    if(e.target.tagName !== 'BUTTON') {
+                        openProfile(n.sender_handle, n.sender_name);
+                    }
+                };
+            }
+            nl.appendChild(item);
+        });
+    });
+}
+
+function acceptFollow(handle, e) {
+    if(e) e.stopPropagation();
+    fetch(`/api/follow/accept/${handle}`, {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+        if(data.success) fetchNotifications();
+    });
+}
+
+function declineFollow(handle, e) {
+    if(e) e.stopPropagation();
+    fetch(`/api/follow/decline/${handle}`, {method: 'POST'})
+    .then(r => r.json())
+    .then(data => {
+        if(data.success) fetchNotifications();
+    });
+}
+
+socket.on('receive_notification', function(n) {
+    unreadNotifs++;
+    const badge = document.getElementById('notifBadge');
+    badge.textContent = unreadNotifs;
+    badge.style.display = 'flex';
+    
+    showNotif(n.content);
+    
+    if (document.getElementById('notificationsView').style.display === 'flex') {
+        fetchNotifications();
+    }
+});
+
 // Update Profile Open to check follow status
 const originalOpenProfile = openProfile;
 openProfile = function(handle, name) {
     originalOpenProfile(handle, name); // Does the UI stuff and fetches posts
     if(currentUser) {
-        fetch(`/api/user/${handle}`)
+        fetch(`/api/user/${handle}`, { cache: 'no-store' })
         .then(r => r.json())
         .then(u => {
             document.getElementById('profFollowers').textContent = u.followers_count;
@@ -1061,8 +1178,13 @@ openProfile = function(handle, name) {
             
             if(!u.is_self) {
                 fbtn.style.display = 'block';
-                fbtn.textContent = u.is_following ? 'Unfollow' : 'Follow';
-                fbtn.style.background = u.is_following ? 'var(--stone)' : 'var(--green3)';
+                if(u.is_requested) {
+                    fbtn.textContent = 'Requested';
+                    fbtn.style.background = 'var(--stone)';
+                } else {
+                    fbtn.textContent = u.is_following ? 'Unfollow' : 'Follow';
+                    fbtn.style.background = u.is_following ? 'var(--stone)' : 'var(--green3)';
+                }
                 
                 if(u.is_mutual) {
                     mbtn.style.display = 'block';
