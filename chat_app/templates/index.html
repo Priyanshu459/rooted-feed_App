@@ -1623,11 +1623,11 @@
     {% if current_user %}
     currentUser = {
       id: {{ current_user.id }},
-      name: "{{ current_user.display_name }}",
-      handle: "{{ current_user.handle }}",
-      uuid: "{{ current_user.uuid }}",
-      photo: "{{ current_user.profile_photo_url }}",
-      bio: `{{ current_user.bio }}`,
+      name: {{ current_user.name | tojson }},
+      handle: {{ current_user.handle | tojson }},
+      uuid: {{ current_user.uuid | tojson }},
+      photo: {{ current_user.photo | tojson }},
+      bio: {{ current_user.bio | tojson }},
       is_private: {{ 'true' if current_user.is_private else 'false' }}
 };
     {% endif %}
