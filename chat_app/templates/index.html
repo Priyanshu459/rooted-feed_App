@@ -1754,8 +1754,6 @@
       <button onclick="acceptCall()" style="background:#4A7C59;border:none;width:44px;height:44px;border-radius:50%;color:#fff;cursor:pointer;font-size:18px;">✔</button>
     </div>
   </div>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
     // --- GLOBAL VARS & SETUP ---
@@ -2704,7 +2702,10 @@
     const rtcConfig = {
       iceServers: [
         { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' }
+        { urls: 'stun:stun1.l.google.com:19302' },
+        { urls: 'stun:stun2.l.google.com:19302' },
+        { urls: 'stun:stun3.l.google.com:19302' },
+        { urls: 'stun:stun4.l.google.com:19302' }
       ]
     };
 
