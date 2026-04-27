@@ -18,18 +18,21 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 load_dotenv()
 
 app = Flask(__name__)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+# Proxy Fix for Render/Production
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_prefix=1)
+
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'secret!')
-# 500 MB max upload size
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rooted.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Session/Cookie Security for OAuth (Fixes MismatchingStateError)
-app.config['SESSION_COOKIE_SECURE'] = True
+# Session/Cookie Security (Fixes MismatchingStateError)
+# On Render, HTTPS is used, but locally HTTP might be used.
+IS_PROD = os.getenv('RENDER') is not None
+app.config['SESSION_COOKIE_SECURE'] = IS_PROD
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PREFERRED_URL_SCHEME'] = 'https'
+app.config['PREFERRED_URL_SCHEME'] = 'https' if IS_PROD else 'http'
 
 # Cloudinary Setup
 cloudinary.config(
@@ -96,10 +99,16 @@ class User(db.Model, UserMixin):
     def follow(self, user):
         if not self.is_following(user):
             self.followed.append(user)
+            db.session.add(self) # Ensure self is tracked for association change
+            return True
+        return False
 
     def unfollow(self, user):
         if self.is_following(user):
             self.followed.remove(user)
+            db.session.add(self)
+            return True
+        return False
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -349,11 +358,13 @@ def post_to_dict(p, viewer_id=None):
 @app.route('/api/posts/following')
 @login_required
 def get_following_posts():
-    followed_ids = [u.id for u in current_user.followed]
-    # Include own posts too
-    followed_ids.append(current_user.id)
+    # current_user.followed is a dynamic relationship, so it's a query
+    followed_users = current_user.followed.all()
+    followed_handles = [u.handle for u in followed_users]
+    # Include own posts
+    followed_handles.append(current_user.handle)
     
-    posts = Post.query.filter(Post.sender.in_([User.query.get(i).handle for i in followed_ids])).order_by(Post.timestamp.desc()).limit(100).all()
+    posts = Post.query.filter(Post.handle.in_(followed_handles)).order_by(Post.timestamp.desc()).limit(100).all()
     
     viewer_id = current_user.id if current_user.is_authenticated else None
     res = [post_to_dict(p, viewer_id) for p in posts]
