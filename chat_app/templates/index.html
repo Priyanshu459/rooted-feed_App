@@ -1497,6 +1497,9 @@
             <button id="messageBtn"
               style="padding:8px 16px; border-radius:20px; font-size:14px; display:none; background:none; border:1px solid var(--stone); cursor:pointer;"
               onclick="startChat()">Message</button>
+            <button id="profileCallBtn"
+              style="padding:8px 16px; border-radius:20px; font-size:14px; display:none; background:none; border:1px solid var(--stone); cursor:pointer;"
+              onclick="startChat(); setTimeout(startVideoCall, 500);">Call</button>
             <button class="btn-primary" id="followBtn"
               style="padding:8px 24px; border-radius:20px; font-size:14px; display:none;"
               onclick="toggleFollow()">Follow</button>
@@ -2566,6 +2569,7 @@
 
             const fbtn = document.getElementById('followBtn');
             const mbtn = document.getElementById('messageBtn');
+            const cbtn = document.getElementById('profileCallBtn');
 
             if (!u.is_self) {
               fbtn.style.display = 'block';
@@ -2579,12 +2583,15 @@
 
               if (u.is_mutual) {
                 mbtn.style.display = 'block';
+                cbtn.style.display = 'block';
               } else {
                 mbtn.style.display = 'none';
+                cbtn.style.display = 'none';
               }
             } else {
               fbtn.style.display = 'none';
               mbtn.style.display = 'none';
+              cbtn.style.display = 'none';
             }
           });
       }
