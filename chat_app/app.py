@@ -157,6 +157,12 @@ class Post(db.Model):
     is_retweet = db.Column(db.Boolean, default=False)
     original_post_id = db.Column(db.String(50), db.ForeignKey('post.id'), nullable=True)
 
+class PostLike(db.Model):
+    """Tracks which user liked which post — enforces one like per user per post."""
+    __tablename__ = 'post_like'
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    post_id = db.Column(db.String(50), db.ForeignKey('post.id'), primary_key=True)
+
 with app.app_context():
     db.create_all()
 
@@ -289,7 +295,7 @@ def get_user_profile(handle):
         'is_self': current_user.is_authenticated and current_user.id == user.id
     })
 
-def post_to_dict(p):
+def post_to_dict(p, viewer_id=None):
     user = User.query.filter_by(handle=p.handle).first()
     sender_name = user.display_name if user else p.sender
     sender_photo = user.profile_photo_url if user else None
@@ -305,6 +311,11 @@ def post_to_dict(p):
         orig = Post.query.get(p.original_post_id)
         if orig:
             retweeted_from = orig.handle
+
+    # Check if the current viewer has already liked this post
+    user_liked = False
+    if viewer_id:
+        user_liked = PostLike.query.filter_by(user_id=viewer_id, post_id=p.id).first() is not None
             
     return {
         'id': p.id,
@@ -323,7 +334,8 @@ def post_to_dict(p):
         'replyToHandle': reply_to_handle,
         'isRetweet': p.is_retweet,
         'originalPostId': p.original_post_id,
-        'retweetedFrom': retweeted_from
+        'retweetedFrom': retweeted_from,
+        'userLiked': user_liked
     }
 
 @app.route('/api/posts/following')
@@ -335,7 +347,8 @@ def get_following_posts():
     
     posts = Post.query.filter(Post.sender.in_([User.query.get(i).handle for i in followed_ids])).order_by(Post.timestamp.desc()).limit(100).all()
     
-    res = [post_to_dict(p) for p in posts]
+    viewer_id = current_user.id if current_user.is_authenticated else None
+    res = [post_to_dict(p, viewer_id) for p in posts]
     return jsonify(res)
 
 @app.route('/api/follow/<handle>', methods=['POST'])
@@ -527,8 +540,10 @@ def handle_join(user_data):
     # Filter private posts
     visible_posts = []
     followed_handles = []
+    viewer_id = None
     if current_user.is_authenticated:
         followed_handles = [u.handle for u in current_user.followed]
+        viewer_id = current_user.id
         
     for p in recent_posts:
         user = User.query.filter_by(handle=p.handle).first()
@@ -552,7 +567,7 @@ def handle_join(user_data):
     visible_posts.sort(key=get_score, reverse=True)
     # Send top 100
     for p in visible_posts[:100]:
-        emit('receive_post', post_to_dict(p))
+        emit('receive_post', post_to_dict(p, viewer_id))
 
 @socketio.on('create_post')
 def handle_create_post(data):
@@ -623,18 +638,35 @@ def handle_bookmark_post(post_id):
 
 @socketio.on('like_post')
 def handle_like_post(post_id):
+    if not current_user.is_authenticated:
+        return
     post = Post.query.get(post_id)
-    if post:
+    if not post:
+        return
+
+    # Check if user already liked this post
+    existing_like = PostLike.query.filter_by(user_id=current_user.id, post_id=post_id).first()
+
+    if existing_like:
+        # Toggle off — unlike
+        db.session.delete(existing_like)
+        post.likes = max(0, post.likes - 1)
+        db.session.commit()
+        emit('update_likes', {'id': post_id, 'likes': post.likes, 'userLiked': False}, broadcast=True)
+    else:
+        # New like
+        new_like = PostLike(user_id=current_user.id, post_id=post_id)
+        db.session.add(new_like)
         post.likes += 1
-        
+
         target_user = User.query.filter_by(handle=post.handle).first()
-        if target_user and current_user.is_authenticated and target_user.id != current_user.id:
+        if target_user and target_user.id != current_user.id:
             n = Notification(user_id=target_user.id, sender_id=current_user.id, type='like', content=f"{current_user.display_name} liked your post.", timestamp=int(time.time() * 1000))
             db.session.add(n)
             socketio.emit('receive_notification', n.to_dict(), room=f"user_{target_user.id}")
-            
+
         db.session.commit()
-        emit('update_likes', {'id': post_id, 'likes': post.likes}, broadcast=True)
+        emit('update_likes', {'id': post_id, 'likes': post.likes, 'userLiked': True}, broadcast=True)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3001))
