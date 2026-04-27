@@ -540,6 +540,63 @@ def send_dm(data):
     emit('receive_message', payload, room=f"user_{current_user.id}")
     emit('receive_message', payload, room=f"user_{target_user.id}")
 
+# --- VIDEO CALL SIGNALING ---
+@socketio.on('video_call_init')
+def handle_video_init(data):
+    if not current_user.is_authenticated: return
+    target_handle = data.get('target_handle')
+    target_user = User.query.filter_by(handle=target_handle).first()
+    if target_user:
+        payload = {
+            'caller_handle': current_user.handle,
+            'caller_name': current_user.display_name,
+            'caller_photo': current_user.profile_photo_url
+        }
+        emit('video_call_incoming', payload, room=f"user_{target_user.id}")
+
+@socketio.on('video_call_accept')
+def handle_video_accept(data):
+    target_handle = data.get('target_handle')
+    target_user = User.query.filter_by(handle=target_handle).first()
+    if target_user:
+        emit('video_call_accepted', {'handle': current_user.handle}, room=f"user_{target_user.id}")
+
+@socketio.on('video_call_reject')
+def handle_video_reject(data):
+    target_handle = data.get('target_handle')
+    target_user = User.query.filter_by(handle=target_handle).first()
+    if target_user:
+        emit('video_call_rejected', {'handle': current_user.handle}, room=f"user_{target_user.id}")
+
+@socketio.on('video_call_offer')
+def handle_video_offer(data):
+    target_handle = data.get('target_handle')
+    target_user = User.query.filter_by(handle=target_handle).first()
+    if target_user:
+        emit('video_call_offer_received', {'offer': data.get('offer'), 'handle': current_user.handle}, room=f"user_{target_user.id}")
+
+@socketio.on('video_call_answer')
+def handle_video_answer(data):
+    target_handle = data.get('target_handle')
+    target_user = User.query.filter_by(handle=target_handle).first()
+    if target_user:
+        emit('video_call_answer_received', {'answer': data.get('answer'), 'handle': current_user.handle}, room=f"user_{target_user.id}")
+
+@socketio.on('video_call_ice')
+def handle_video_ice(data):
+    target_handle = data.get('target_handle')
+    target_user = User.query.filter_by(handle=target_handle).first()
+    if target_user:
+        emit('video_call_ice_received', {'candidate': data.get('candidate'), 'handle': current_user.handle}, room=f"user_{target_user.id}")
+
+@socketio.on('video_call_hangup')
+def handle_video_hangup(data):
+    target_handle = data.get('target_handle')
+    target_user = User.query.filter_by(handle=target_handle).first()
+    if target_user:
+        emit('video_call_disconnected', {'handle': current_user.handle}, room=f"user_{target_user.id}")
+
+
 @socketio.on('join')
 def handle_join(user_data):
     # Fetch top 200 recent posts

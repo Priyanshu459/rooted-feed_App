@@ -1154,7 +1154,7 @@
     .node-pill {
       padding: 8px 18px;
       border-radius: 20px;
-      border: 1px solid rgba(139,94,60,0.2);
+      border: 1px solid rgba(139, 94, 60, 0.2);
       background: #fff;
       color: var(--stone);
       font-size: 14px;
@@ -1164,14 +1164,106 @@
       font-weight: 500;
       white-space: nowrap;
     }
+
     .node-pill.active {
       background: var(--green3);
       color: #fff;
       border-color: var(--green3);
     }
+
     .node-pill:hover:not(.active) {
-      background: rgba(139,94,60,0.06);
+      background: rgba(139, 94, 60, 0.06);
       color: var(--earth1);
+    }
+
+    /* VIDEO CALL UI */
+    .video-call-modal {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 500;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .remote-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .local-video-container {
+      position: absolute;
+      bottom: 100px;
+      right: 24px;
+      width: 150px;
+      height: 220px;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+      background: #222;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+
+    .local-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .call-controls {
+      position: absolute;
+      bottom: 40px;
+      display: flex;
+      gap: 20px;
+      z-index: 510;
+    }
+
+    .call-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 24px;
+      transition: all 0.3s;
+    }
+
+    .btn-hangup { background: #ff4b4b; color: #fff; }
+    .btn-hangup:hover { background: #ff2d2d; transform: scale(1.1); }
+    .btn-mute { background: rgba(255,255,255,0.2); color: #fff; backdrop-filter: blur(10px); }
+    .btn-mute.active { background: #fff; color: #000; }
+
+    .incoming-call-overlay {
+      position: fixed;
+      top: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-200%);
+      background: var(--earth2);
+      color: #fff;
+      padding: 20px 32px;
+      border-radius: 24px;
+      z-index: 600;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.3);
+      transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .incoming-call-overlay.show {
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .caller-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
   </style>
 </head>
@@ -1440,6 +1532,8 @@
         <img id="chatAvatar" class="mini-avatar" style="width:36px; height:36px; object-fit:cover; display:none;">
         <div id="chatAvatarText" class="mini-avatar" style="width:36px; height:36px;"></div>
         <h2 id="chatName" style="font-size:18px; font-weight:600; margin:0; cursor:pointer;"></h2>
+        <div style="flex:1;"></div>
+        <div class="icon-btn" onclick="startVideoCall()" style="font-size:20px; cursor:pointer;" title="Video Call">📞</div>
       </div>
       <div id="chatMessages"
         style="flex:1; overflow-y:auto; padding:24px; background:var(--cream); display:flex; flex-direction:column; gap:12px;">
@@ -1470,8 +1564,10 @@
     <div class="main-feed mock-view" id="mockView"
       style="display:none; justify-content:center; align-items:center; text-align:center; padding:48px;">
       <div style="font-size:48px; margin-bottom:16px;" id="mockIcon">💸</div>
-      <h2 style="font-size:32px; font-weight:700; color:var(--earth1); margin-bottom:12px;" id="mockTitle">Rooted Money</h2>
-      <p style="font-size:18px; color:var(--stone); max-width:400px; line-height:1.5;">This feature is part of the Rooted Everything App vision. Coming soon in Phase 4.</p>
+      <h2 style="font-size:32px; font-weight:700; color:var(--earth1); margin-bottom:12px;" id="mockTitle">Rooted Money
+      </h2>
+      <p style="font-size:18px; color:var(--stone); max-width:400px; line-height:1.5;">This feature is part of the
+        Rooted Everything App vision. Coming soon in Phase 4.</p>
     </div>
 
     <!-- EXPLORE VIEW -->
@@ -1479,9 +1575,13 @@
       <div class="feed-header" style="padding:16px 24px;">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
           <h2 style="font-size:20px; font-weight:700; margin:0;">Explore Nodes</h2>
-          <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:22px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%;" class="icon-btn">✕</div>
+          <div onclick="switchTab('feedView')"
+            style="cursor:pointer; color:var(--stone); font-size:22px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%;"
+            class="icon-btn">✕</div>
         </div>
-        <div style="background:rgba(139,94,60,0.06); border-radius:32px; padding:12px 20px; display:flex; align-items:center; gap:12px; margin-bottom:14px; border:1px solid transparent; transition:all 0.3s;" onfocus="this.style.borderColor='var(--earth4)'" onblur="this.style.borderColor='transparent'">
+        <div
+          style="background:rgba(139,94,60,0.06); border-radius:32px; padding:12px 20px; display:flex; align-items:center; gap:12px; margin-bottom:14px; border:1px solid transparent; transition:all 0.3s;"
+          onfocus="this.style.borderColor='var(--earth4)'" onblur="this.style.borderColor='transparent'">
           <span style="font-size:16px;">🔍</span>
           <input type="text" id="exploreSearch" placeholder="Search posts, people..."
             style="background:none; border:none; outline:none; font-size:15px; color:var(--earth1); font-family:inherit; flex:1;"
@@ -1501,25 +1601,35 @@
     <!-- AI VIEW -->
     <div class="main-feed" id="aiView" style="display:none; flex-direction:column; background:#fff;">
       <div class="feed-header" style="display:flex; align-items:center; gap:14px; padding:16px 24px;">
-        <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,var(--green3),var(--moss)); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">🌿</div>
+        <div
+          style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,var(--green3),var(--moss)); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">
+          🌿</div>
         <div style="flex:1;">
           <h2 style="font-size:18px; font-weight:700; margin:0; color:var(--earth1);">Rooted AI</h2>
           <div style="font-size:13px; color:var(--stone);">Your earthy AI companion</div>
         </div>
-        <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:22px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%;" class="icon-btn">✕</div>
+        <div onclick="switchTab('feedView')"
+          style="cursor:pointer; color:var(--stone); font-size:22px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%;"
+          class="icon-btn">✕</div>
       </div>
-      <div id="aiMessages" style="flex:1; min-height:0; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; background:var(--cream); word-break:break-word; overflow-wrap:break-word;">
+      <div id="aiMessages"
+        style="flex:1; min-height:0; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; background:var(--cream); word-break:break-word; overflow-wrap:break-word;">
         <div style="display:flex; gap:12px; align-items:flex-start;">
-          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green3),var(--moss));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🌿</div>
-          <div class="chat-bubble them" style="border-radius:16px 16px 16px 4px; max-width:80%; word-break:break-word;">Hello! I'm Rooted AI, your earthy companion 🌿 Ask me anything — advice, ideas, or just a chat!</div>
+          <div
+            style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green3),var(--moss));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">
+            🌿</div>
+          <div class="chat-bubble them" style="border-radius:16px 16px 16px 4px; max-width:80%; word-break:break-word;">
+            Hello! I'm Rooted AI, your earthy companion 🌿 Ask me anything — advice, ideas, or just a chat!</div>
         </div>
       </div>
-      <div style="padding:16px 24px; border-top:1px solid rgba(139,94,60,0.1); display:flex; gap:12px; background:#fff; align-items:center;">
+      <div
+        style="padding:16px 24px; border-top:1px solid rgba(139,94,60,0.1); display:flex; gap:12px; background:#fff; align-items:center;">
         <input type="text" id="aiInput" placeholder="Ask Rooted AI anything..."
           style="flex:1; padding:12px 20px; border-radius:24px; border:1px solid rgba(139,94,60,0.2); outline:none; font-size:15px; font-family:inherit; transition:border-color 0.2s;"
           onfocus="this.style.borderColor='var(--earth4)'" onblur="this.style.borderColor='rgba(139,94,60,0.2)'"
           onkeydown="if(event.key==='Enter') sendAIMessage()">
-        <button class="btn-primary" style="padding:0 24px; height:46px; border-radius:24px; font-size:15px;" onclick="sendAIMessage()">Send</button>
+        <button class="btn-primary" style="padding:0 24px; height:46px; border-radius:24px; font-size:15px;"
+          onclick="sendAIMessage()">Send</button>
       </div>
     </div>
 
@@ -1614,6 +1724,34 @@
     </div>
   </div>
 
+  <!-- VIDEO CALL MODAL -->
+  <div class="video-call-modal" id="videoCallModal">
+    <video id="remoteVideo" class="remote-video" autoplay playsinline></video>
+    <div class="local-video-container">
+      <video id="localVideo" class="local-video" autoplay playsinline muted></video>
+    </div>
+    <div class="call-controls">
+      <button class="call-btn btn-mute" onclick="toggleMic()" id="micBtn">🎤</button>
+      <button class="call-btn btn-mute" onclick="toggleCam()" id="camBtn">📷</button>
+      <button class="call-btn btn-hangup" onclick="endCall()">📞</button>
+    </div>
+  </div>
+
+  <!-- INCOMING CALL OVERLAY -->
+  <div class="incoming-call-overlay" id="incomingCallOverlay">
+    <div class="caller-info">
+      <img id="incomingCallerPhoto" src="" class="mini-avatar" style="width:48px;height:48px;object-fit:cover;">
+      <div>
+        <div id="incomingCallerName" style="font-weight:700;font-size:16px;">Caller Name</div>
+        <div style="font-size:13px;opacity:0.8;">Incoming Video Call...</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:12px;">
+      <button onclick="rejectCall()" style="background:#ff4b4b;border:none;width:44px;height:44px;border-radius:50%;color:#fff;cursor:pointer;font-size:18px;">✕</button>
+      <button onclick="acceptCall()" style="background:#4A7C59;border:none;width:44px;height:44px;border-radius:50%;color:#fff;cursor:pointer;font-size:18px;">✔</button>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
@@ -1629,7 +1767,7 @@
       photo: {{ current_user.photo | tojson }},
       bio: {{ current_user.bio | tojson }},
       is_private: {{ 'true' if current_user.is_private else 'false' }}
-};
+    };
     {% endif %}
 
     let replyingToPostId = null;
@@ -2537,7 +2675,7 @@
 
     function appendAIMessage(text, role) {
       const area = document.getElementById('aiMessages');
-      const safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+      const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
       const wrap = document.createElement('div');
       if (role === 'user') {
         wrap.style.cssText = 'display:flex; justify-content:flex-end;';
@@ -2550,6 +2688,160 @@
       }
       area.appendChild(wrap);
       area.scrollTop = 99999;
+    }
+
+    // --- VIDEO CALL (WebRTC) ---
+    let peerConnection = null;
+    let localStream = null;
+    let targetCallHandle = null;
+    const rtcConfig = {
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
+    };
+
+    async function startVideoCall() {
+      if (!currentChatTarget) return;
+      targetCallHandle = currentChatTarget;
+      
+      showNotif('Calling ' + targetCallHandle + '...');
+      socket.emit('video_call_init', { target_handle: targetCallHandle });
+      
+      // Setup UI for outgoing call
+      document.getElementById('videoCallModal').style.display = 'flex';
+      await setupLocalStream();
+    }
+
+    async function setupLocalStream() {
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        document.getElementById('localVideo').srcObject = localStream;
+      } catch (e) {
+        console.error('Error accessing media devices:', e);
+        showNotif('Could not access camera/mic ❌');
+        endCall();
+      }
+    }
+
+    socket.on('video_call_incoming', (data) => {
+      const overlay = document.getElementById('incomingCallOverlay');
+      document.getElementById('incomingCallerName').innerText = data.caller_name;
+      document.getElementById('incomingCallerPhoto').src = data.caller_photo || '';
+      targetCallHandle = data.caller_handle;
+      overlay.classList.add('show');
+      
+      // Play a ringtone logic could go here
+    });
+
+    async function acceptCall() {
+      document.getElementById('incomingCallOverlay').classList.remove('show');
+      document.getElementById('videoCallModal').style.display = 'flex';
+      await setupLocalStream();
+      socket.emit('video_call_accept', { target_handle: targetCallHandle });
+      initPeerConnection();
+    }
+
+    function rejectCall() {
+      document.getElementById('incomingCallOverlay').classList.remove('show');
+      socket.emit('video_call_reject', { target_handle: targetCallHandle });
+      targetCallHandle = null;
+    }
+
+    socket.on('video_call_accepted', async (data) => {
+      showNotif('Call connected!');
+      initPeerConnection();
+      
+      // Create Offer
+      const offer = await peerConnection.createOffer();
+      await peerConnection.setLocalDescription(offer);
+      socket.emit('video_call_offer', { offer: offer, target_handle: targetCallHandle });
+    });
+
+    socket.on('video_call_rejected', (data) => {
+      showNotif('Call rejected ❌');
+      endCall();
+    });
+
+    function initPeerConnection() {
+      peerConnection = new RTCPeerConnection(rtcConfig);
+      
+      // Add local stream tracks
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      // Handle remote stream
+      peerConnection.ontrack = (event) => {
+        document.getElementById('remoteVideo').srcObject = event.streams[0];
+      };
+
+      // Handle ICE candidates
+      peerConnection.onicecandidate = (event) => {
+        if (event.candidate) {
+          socket.emit('video_call_ice', { candidate: event.candidate, target_handle: targetCallHandle });
+        }
+      };
+    }
+
+    socket.on('video_call_offer_received', async (data) => {
+      if (!peerConnection) initPeerConnection();
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+      socket.emit('video_call_answer', { answer: answer, target_handle: targetCallHandle });
+    });
+
+    socket.on('video_call_answer_received', async (data) => {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
+    });
+
+    socket.on('video_call_ice_received', async (data) => {
+      if (peerConnection) {
+        try {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } catch (e) { console.error('Error adding ICE candidate', e); }
+      }
+    });
+
+    socket.on('video_call_disconnected', () => {
+      showNotif('Call ended');
+      endCall();
+    });
+
+    function endCall() {
+      if (targetCallHandle) {
+        socket.emit('video_call_hangup', { target_handle: targetCallHandle });
+      }
+      
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      
+      if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+      }
+      
+      document.getElementById('videoCallModal').style.display = 'none';
+      document.getElementById('localVideo').srcObject = null;
+      document.getElementById('remoteVideo').srcObject = null;
+      targetCallHandle = null;
+    }
+
+    function toggleMic() {
+      const audioTrack = localStream.getAudioTracks()[0];
+      audioTrack.enabled = !audioTrack.enabled;
+      document.getElementById('micBtn').classList.toggle('active', !audioTrack.enabled);
+      document.getElementById('micBtn').innerText = audioTrack.enabled ? '🎤' : '🔇';
+    }
+
+    function toggleCam() {
+      const videoTrack = localStream.getVideoTracks()[0];
+      videoTrack.enabled = !videoTrack.enabled;
+      document.getElementById('camBtn').classList.toggle('active', !videoTrack.enabled);
+      document.getElementById('camBtn').innerText = videoTrack.enabled ? '📷' : '🚫';
     }
   </script>
 </body>
