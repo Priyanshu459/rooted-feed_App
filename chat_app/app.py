@@ -689,7 +689,9 @@ def ai_chat():
 
         messages = [{"role": "system", "content": system_prompt}]
         for h in history:
-            messages.append({"role": h['role'], "content": h['content']})
+            # Convert 'model' role from frontend to 'assistant' for Sarvam AI
+            role = "assistant" if h['role'] == "model" else h['role']
+            messages.append({"role": role, "content": h['content']})
         messages.append({"role": "user", "content": message})
 
         response = client.chat.completions(
@@ -704,7 +706,8 @@ def ai_chat():
         err = str(e)
         if 'quota' in err.lower() or '429' in err or 'rate' in err.lower():
             return jsonify({'reply': '⏳ Rooted AI is resting a moment. Please try again in 30 seconds 🌿'})
-        return jsonify({'reply': 'Something went wrong. Please try again shortly.'})
+        # Show actual error for debugging
+        return jsonify({'reply': f'AI Error: {err[:200]}'})
 
 
 if __name__ == '__main__':
