@@ -25,6 +25,12 @@ app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rooted.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Session/Cookie Security for OAuth (Fixes MismatchingStateError)
+app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['PREFERRED_URL_SCHEME'] = 'https'
+
 # Cloudinary Setup
 cloudinary.config(
     cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
