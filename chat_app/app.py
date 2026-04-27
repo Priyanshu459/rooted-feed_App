@@ -677,24 +677,21 @@ def ai_chat():
         import google.generativeai as genai
         api_key = os.getenv('GEMINI_API_KEY')
         if not api_key:
-            return jsonify({'reply': '⚡ Rooted AI is not configured yet. Add GEMINI_API_KEY to your environment variables to enable it.'})
+            return jsonify({'reply': '⚡ Rooted AI is not configured yet. Add GEMINI_API_KEY to your environment variables.'})
 
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-2.0-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
 
         data = request.get_json()
-        history = data.get('history', [])
+        history = data.get('history', [])[-6:]  # last 6 msgs only to save free-tier tokens
         message = data.get('message', '')
 
-        system_prompt = (
-            "You are Rooted AI, a warm and earthy AI assistant embedded in Rooted — "
-            "a nature-inspired social platform. Be friendly, concise, and thoughtful. "
-            "Use a grounded, warm tone. Keep responses under 300 words unless asked for more."
-        )
+        # Short system prompt to minimise token usage
+        system_prompt = "You are Rooted AI \ud83c\udf3f \u2014 a friendly, concise assistant on a nature-inspired social app. Keep replies under 150 words."
 
         chat_history = [
             {"role": "user", "parts": [system_prompt]},
-            {"role": "model", "parts": ["Understood! I'm Rooted AI 🌿 How can I help you today?"]}
+            {"role": "model", "parts": ["Got it! I'm Rooted AI \ud83c\udf3f How can I help?"]}
         ]
         for h in history:
             chat_history.append({"role": h['role'], "parts": [h['content']]})
@@ -703,7 +700,11 @@ def ai_chat():
         response = chat.send_message(message)
         return jsonify({'reply': response.text})
     except Exception as e:
-        return jsonify({'reply': f'Something went wrong: {str(e)}'})
+        err = str(e)
+        if 'quota' in err.lower() or '429' in err or 'exhausted' in err.lower():
+            return jsonify({'reply': '\u23f3 Rooted AI is resting (free tier rate limit). Wait 30\u201360 seconds and try again \ud83c\udf3f'})
+        return jsonify({'reply': f'Something went wrong. Please try again shortly.'})
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3001))
