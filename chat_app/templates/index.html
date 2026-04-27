@@ -1149,6 +1149,30 @@
     .toggle-switch input:checked+.toggle-slider .toggle-knob {
       transform: translateX(22px);
     }
+
+    /* NODE PILLS (Explore) */
+    .node-pill {
+      padding: 8px 18px;
+      border-radius: 20px;
+      border: 1px solid rgba(139,94,60,0.2);
+      background: #fff;
+      color: var(--stone);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+    .node-pill.active {
+      background: var(--green3);
+      color: #fff;
+      border-color: var(--green3);
+    }
+    .node-pill:hover:not(.active) {
+      background: rgba(139,94,60,0.06);
+      color: var(--earth1);
+    }
   </style>
 </head>
 
@@ -1313,7 +1337,7 @@
       </div>
 
       <!-- COMPOSER -->
-      <div class="composer">
+      <div class="composer" id="feedComposer">
         <div class="composer-avatar" id="composerAvatar">
           {% if current_user.photo %}
           <img src="{{ current_user.photo }}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">
@@ -1442,14 +1466,63 @@
       </div>
     </div>
 
+    <!-- MONEY / JOBS placeholder -->
     <div class="main-feed mock-view" id="mockView"
       style="display:none; justify-content:center; align-items:center; text-align:center; padding:48px;">
       <div style="font-size:48px; margin-bottom:16px;" id="mockIcon">💸</div>
-      <h2 style="font-size:32px; font-weight:700; color:var(--earth1); margin-bottom:12px;" id="mockTitle">Rooted Money
-      </h2>
-      <p style="font-size:18px; color:var(--stone); max-width:400px; line-height:1.5;">This feature is part of the
-        Rooted Everything App vision. Coming soon in Phase 4.</p>
+      <h2 style="font-size:32px; font-weight:700; color:var(--earth1); margin-bottom:12px;" id="mockTitle">Rooted Money</h2>
+      <p style="font-size:18px; color:var(--stone); max-width:400px; line-height:1.5;">This feature is part of the Rooted Everything App vision. Coming soon in Phase 4.</p>
     </div>
+
+    <!-- EXPLORE VIEW -->
+    <div class="main-feed" id="exploreView" style="display:none; flex-direction:column; background:#fff;">
+      <div class="feed-header" style="padding:16px 24px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+          <h2 style="font-size:20px; font-weight:700; margin:0;">Explore Nodes</h2>
+          <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:22px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%;" class="icon-btn">✕</div>
+        </div>
+        <div style="background:rgba(139,94,60,0.06); border-radius:32px; padding:12px 20px; display:flex; align-items:center; gap:12px; margin-bottom:14px; border:1px solid transparent; transition:all 0.3s;" onfocus="this.style.borderColor='var(--earth4)'" onblur="this.style.borderColor='transparent'">
+          <span style="font-size:16px;">🔍</span>
+          <input type="text" id="exploreSearch" placeholder="Search posts, people..."
+            style="background:none; border:none; outline:none; font-size:15px; color:var(--earth1); font-family:inherit; flex:1;"
+            oninput="filterExplorePosts()">
+        </div>
+        <div style="display:flex; gap:8px; flex-wrap:nowrap; overflow-x:auto; padding-bottom:4px;" id="nodeFilters">
+          <button onclick="setExploreNode('All')" class="node-pill active" data-node="All">🌍 All</button>
+          <button onclick="setExploreNode('For You')" class="node-pill" data-node="For You">✨ For You</button>
+          <button onclick="setExploreNode('Tech')" class="node-pill" data-node="Tech">💻 Tech</button>
+          <button onclick="setExploreNode('Nature')" class="node-pill" data-node="Nature">🌲 Nature</button>
+          <button onclick="setExploreNode('Finance')" class="node-pill" data-node="Finance">📈 Finance</button>
+        </div>
+      </div>
+      <div class="posts-area" id="explorePostsArea"></div>
+    </div>
+
+    <!-- AI VIEW -->
+    <div class="main-feed" id="aiView" style="display:none; flex-direction:column; background:#fff;">
+      <div class="feed-header" style="display:flex; align-items:center; gap:14px; padding:16px 24px;">
+        <div style="width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,var(--green3),var(--moss)); display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;">🌿</div>
+        <div style="flex:1;">
+          <h2 style="font-size:18px; font-weight:700; margin:0; color:var(--earth1);">Rooted AI</h2>
+          <div style="font-size:13px; color:var(--stone);">Your earthy AI companion</div>
+        </div>
+        <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:22px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%;" class="icon-btn">✕</div>
+      </div>
+      <div id="aiMessages" style="flex:1; overflow-y:auto; padding:24px; display:flex; flex-direction:column; gap:16px; background:var(--cream);">
+        <div style="display:flex; gap:12px; align-items:flex-start;">
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green3),var(--moss));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🌿</div>
+          <div class="chat-bubble them" style="border-radius:16px 16px 16px 4px; max-width:80%;">Hello! I'm Rooted AI, your earthy companion 🌿 Ask me anything — advice, ideas, or just a chat!</div>
+        </div>
+      </div>
+      <div style="padding:16px 24px; border-top:1px solid rgba(139,94,60,0.1); display:flex; gap:12px; background:#fff; align-items:center;">
+        <input type="text" id="aiInput" placeholder="Ask Rooted AI anything..."
+          style="flex:1; padding:12px 20px; border-radius:24px; border:1px solid rgba(139,94,60,0.2); outline:none; font-size:15px; font-family:inherit; transition:border-color 0.2s;"
+          onfocus="this.style.borderColor='var(--earth4)'" onblur="this.style.borderColor='rgba(139,94,60,0.2)'"
+          onkeydown="if(event.key==='Enter') sendAIMessage()">
+        <button class="btn-primary" style="padding:0 24px; height:46px; border-radius:24px; font-size:15px;" onclick="sendAIMessage()">Send</button>
+      </div>
+    </div>
+
 
     <!-- RIGHT SIDEBAR -->
     <div class="right-sidebar">
@@ -1549,6 +1622,7 @@
     let currentUser = null;
     {% if current_user %}
     currentUser = {
+      id: {{ current_user.id }},
       name: "{{ current_user.display_name }}",
       handle: "{{ current_user.handle }}",
       uuid: "{{ current_user.uuid }}",
@@ -1682,6 +1756,13 @@
                 if (pAvatar && currentUser.photo) pAvatar.src = currentUser.photo;
               }
 
+              // --- Fix 5: Update all existing post-card avatars for this user in the feed ---
+              if (data.url) {
+                document.querySelectorAll(`[data-post-handle="${currentUser.handle}"]`).forEach(el => {
+                  el.src = data.url;
+                });
+              }
+
               // Close modal and show toast
               document.getElementById('profileEditModal').style.display = 'none';
               showNotif('Profile updated! ✅');
@@ -1797,23 +1878,46 @@
     }
 
     let currentFeedTab = 'ForYou';
+    let followingPosts = []; // cache for following tab
 
     function switchFeedTab(tab) {
       currentFeedTab = tab;
+
+      // Update tab indicator styles
       document.getElementById('tabForYou').style.borderBottom = tab === 'ForYou' ? '4px solid var(--green3)' : 'none';
       document.getElementById('tabForYou').style.color = tab === 'ForYou' ? 'var(--earth1)' : 'var(--stone)';
       document.getElementById('tabFollowing').style.borderBottom = tab === 'Following' ? '4px solid var(--green3)' : 'none';
       document.getElementById('tabFollowing').style.color = tab === 'Following' ? 'var(--earth1)' : 'var(--stone)';
 
-      // Clear feed and re-fetch (simulated by re-requesting from server or using cache)
-      document.getElementById('postsArea').innerHTML = '';
+      // Show composer only on ForYou tab
+      const composer = document.getElementById('feedComposer');
+      if (composer) composer.style.display = tab === 'ForYou' ? 'flex' : 'none';
+
+      const area = document.getElementById('postsArea');
+      area.innerHTML = '';
+
       if (tab === 'ForYou') {
-        socket.emit('join', {});
+        if (ALL_POSTS.length > 0) {
+          // Use cached posts — no server re-request needed
+          ALL_POSTS.forEach(p => addPostToFeed(p, false, 'postsArea'));
+        } else {
+          socket.emit('join', {});
+        }
       } else {
         fetch('/api/posts/following')
           .then(r => r.json())
           .then(posts => {
-            posts.forEach(p => addPostToFeed(p));
+            followingPosts = posts;
+            if (posts.length === 0) {
+              area.innerHTML = `
+                <div style="text-align:center; padding:48px; color:var(--stone);">
+                  <div style="font-size:48px; margin-bottom:16px;">🌱</div>
+                  <div style="font-size:18px; font-weight:600; color:var(--earth1);">Nothing here yet</div>
+                  <div style="font-size:14px; margin-top:8px;">Follow people to see their posts here.</div>
+                </div>`;
+            } else {
+              posts.forEach(p => addPostToFeed(p, false, 'postsArea'));
+            }
           });
       }
     }
@@ -1822,25 +1926,37 @@
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
-      const views = ['feedView', 'mockView', 'profileView', 'messagesView', 'chatView', 'notificationsView'];
-      views.forEach(v => {
+      const allViews = ['feedView', 'mockView', 'exploreView', 'aiView', 'profileView', 'messagesView', 'chatView', 'notificationsView'];
+      allViews.forEach(v => {
         const el = document.getElementById(v);
         if (el) el.style.display = 'none';
       });
 
-      const target = document.getElementById(tab);
-      if (target) target.style.display = 'flex';
-
       if (tab === 'feedView') {
-        switchFeedTab(currentFeedTab);
-      } else if (tab === 'explore' || tab === 'money' || tab === 'jobs' || tab === 'ai') {
+        document.getElementById('feedView').style.display = 'flex';
+        // Only re-render from cache — don't wipe the feed on every home press
+        if (ALL_POSTS.length === 0) {
+          switchFeedTab(currentFeedTab);
+        } else {
+          // Restore composer visibility for current tab
+          const composer = document.getElementById('feedComposer');
+          if (composer) composer.style.display = currentFeedTab === 'ForYou' ? 'flex' : 'none';
+        }
+      } else if (tab === 'explore') {
+        document.getElementById('exploreView').style.display = 'flex';
+        filterExplorePosts();
+      } else if (tab === 'ai') {
+        document.getElementById('aiView').style.display = 'flex';
+        document.getElementById('aiInput').focus();
+      } else if (tab === 'money' || tab === 'jobs') {
         document.getElementById('mockView').style.display = 'flex';
         const title = document.getElementById('mockTitle');
         const icon = document.getElementById('mockIcon');
-        if (tab === 'explore') { title.innerText = 'Explore Nodes'; icon.innerText = '🔍'; }
         if (tab === 'money') { title.innerText = 'Rooted Money'; icon.innerText = '💸'; }
         if (tab === 'jobs') { title.innerText = 'Rooted Jobs'; icon.innerText = '💼'; }
-        if (tab === 'ai') { title.innerText = 'Rooted AI Assistant'; icon.innerText = '🤖'; }
+      } else {
+        const target = document.getElementById(tab);
+        if (target) target.style.display = 'flex';
       }
     }
 
@@ -1909,7 +2025,7 @@
 
       let avatarHtml = '';
       if (post.senderPhoto) {
-        avatarHtml = `<img src="${post.senderPhoto}" class="post-avatar" style="object-fit:cover;">`;
+        avatarHtml = `<img src="${post.senderPhoto}" class="post-avatar" style="object-fit:cover;" data-post-handle="${post.handle}">`;
       } else {
         const initial = post.sender.charAt(0).toUpperCase();
         avatarHtml = `<div class="post-avatar">${initial}</div>`;
@@ -2340,6 +2456,100 @@
     if (currentUser) {
       socket.emit('join_chat', {});
       fetchConversations();
+    }
+
+    // --- EXPLORE FUNCTIONS ---
+    let currentExploreNode = 'All';
+
+    function setExploreNode(node) {
+      currentExploreNode = node;
+      document.querySelectorAll('.node-pill').forEach(p => {
+        p.classList.toggle('active', p.dataset.node === node);
+      });
+      filterExplorePosts();
+    }
+
+    function filterExplorePosts() {
+      const search = (document.getElementById('exploreSearch')?.value || '').toLowerCase();
+      const area = document.getElementById('explorePostsArea');
+      if (!area) return;
+      area.innerHTML = '';
+
+      const filtered = ALL_POSTS.filter(p => {
+        const matchNode = currentExploreNode === 'All' || p.node === currentExploreNode;
+        const matchSearch = !search ||
+          (p.text && p.text.toLowerCase().includes(search)) ||
+          (p.sender && p.sender.toLowerCase().includes(search)) ||
+          (p.handle && p.handle.toLowerCase().includes(search));
+        return matchNode && matchSearch;
+      });
+
+      if (filtered.length === 0) {
+        area.innerHTML = `<div style="text-align:center; padding:48px; color:var(--stone);">
+          <div style="font-size:48px; margin-bottom:16px;">🌿</div>
+          <div style="font-size:18px; font-weight:600; color:var(--earth1);">No posts found</div>
+          <div style="font-size:14px; margin-top:8px;">Try a different node or keyword.</div>
+        </div>`;
+        return;
+      }
+      filtered.forEach(p => addPostToFeed(p, false, 'explorePostsArea'));
+    }
+
+    // --- AI CHAT FUNCTIONS ---
+    let aiHistory = [];
+
+    async function sendAIMessage() {
+      const input = document.getElementById('aiInput');
+      const text = input.value.trim();
+      if (!text) return;
+      input.value = '';
+
+      appendAIMessage(text, 'user');
+      aiHistory.push({ role: 'user', content: text });
+
+      // Typing indicator
+      const typingId = 'ai-typing-' + Date.now();
+      const typingDiv = document.createElement('div');
+      typingDiv.id = typingId;
+      typingDiv.style.cssText = 'display:flex; gap:12px; align-items:flex-start;';
+      typingDiv.innerHTML = `
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green3),var(--moss));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🌿</div>
+        <div class="chat-bubble them" style="border-radius:16px 16px 16px 4px;font-style:italic;opacity:0.6;">Thinking...</div>`;
+      document.getElementById('aiMessages').appendChild(typingDiv);
+      document.getElementById('aiMessages').scrollTop = 99999;
+
+      try {
+        const res = await fetch('/api/ai/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: text, history: aiHistory.slice(0, -1) })
+        });
+        const data = await res.json();
+        document.getElementById(typingId)?.remove();
+        const reply = data.reply || 'Sorry, something went wrong.';
+        appendAIMessage(reply, 'ai');
+        aiHistory.push({ role: 'model', content: reply });
+      } catch (e) {
+        document.getElementById(typingId)?.remove();
+        appendAIMessage('Connection error. Please try again.', 'ai');
+      }
+    }
+
+    function appendAIMessage(text, role) {
+      const area = document.getElementById('aiMessages');
+      const safe = text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+      const wrap = document.createElement('div');
+      if (role === 'user') {
+        wrap.style.cssText = 'display:flex; justify-content:flex-end;';
+        wrap.innerHTML = `<div class="chat-bubble me" style="border-radius:16px 16px 4px 16px; max-width:80%;">${safe}</div>`;
+      } else {
+        wrap.style.cssText = 'display:flex; gap:12px; align-items:flex-start;';
+        wrap.innerHTML = `
+          <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--green3),var(--moss));display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">🌿</div>
+          <div class="chat-bubble them" style="border-radius:16px 16px 16px 4px; max-width:80%; white-space:pre-wrap;">${safe}</div>`;
+      }
+      area.appendChild(wrap);
+      area.scrollTop = 99999;
     }
   </script>
 </body>

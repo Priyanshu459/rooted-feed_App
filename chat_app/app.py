@@ -174,11 +174,13 @@ def index():
     user_data = None
     if current_user.is_authenticated:
         user_data = {
+            'id': current_user.id,
             'name': current_user.display_name,
             'handle': current_user.handle,
             'uuid': current_user.uuid,
             'photo': current_user.profile_photo_url,
-            'bio': current_user.bio
+            'bio': current_user.bio,
+            'is_private': current_user.is_private
         }
     return render_template('index.html', current_user=user_data)
 
@@ -667,6 +669,41 @@ def handle_like_post(post_id):
 
         db.session.commit()
         emit('update_likes', {'id': post_id, 'likes': post.likes, 'userLiked': True}, broadcast=True)
+
+@app.route('/api/ai/chat', methods=['POST'])
+@login_required
+def ai_chat():
+    try:
+        import google.generativeai as genai
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            return jsonify({'reply': '⚡ Rooted AI is not configured yet. Add GEMINI_API_KEY to your environment variables to enable it.'})
+
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+
+        data = request.get_json()
+        history = data.get('history', [])
+        message = data.get('message', '')
+
+        system_prompt = (
+            "You are Rooted AI, a warm and earthy AI assistant embedded in Rooted — "
+            "a nature-inspired social platform. Be friendly, concise, and thoughtful. "
+            "Use a grounded, warm tone. Keep responses under 300 words unless asked for more."
+        )
+
+        chat_history = [
+            {"role": "user", "parts": [system_prompt]},
+            {"role": "model", "parts": ["Understood! I'm Rooted AI 🌿 How can I help you today?"]}
+        ]
+        for h in history:
+            chat_history.append({"role": h['role'], "parts": [h['content']]})
+
+        chat = model.start_chat(history=chat_history)
+        response = chat.send_message(message)
+        return jsonify({'reply': response.text})
+    except Exception as e:
+        return jsonify({'reply': f'Something went wrong: {str(e)}'})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3001))
