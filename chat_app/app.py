@@ -674,36 +674,37 @@ def handle_like_post(post_id):
 @login_required
 def ai_chat():
     try:
-        import google.generativeai as genai
-        api_key = os.getenv('GEMINI_API_KEY')
+        from sarvamai import SarvamAI
+        api_key = os.getenv('SARVAM_API_KEY')
         if not api_key:
-            return jsonify({'reply': '⚡ Rooted AI is not configured yet. Add GEMINI_API_KEY to your environment variables.'})
+            return jsonify({'reply': '⚡ Rooted AI is not configured yet. Add SARVAM_API_KEY to your environment variables.'})
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        client = SarvamAI(api_subscription_key=api_key)
 
         data = request.get_json()
-        history = data.get('history', [])[-6:]  # last 6 msgs only to save free-tier tokens
+        history = data.get('history', [])[-6:]
         message = data.get('message', '')
 
-        # Short system prompt to minimise token usage
-        system_prompt = "You are Rooted AI \ud83c\udf3f \u2014 a friendly, concise assistant on a nature-inspired social app. Keep replies under 150 words."
+        system_prompt = "You are Rooted AI 🌿 — a friendly, concise assistant on a nature-inspired Indian social platform. Keep replies under 150 words."
 
-        chat_history = [
-            {"role": "user", "parts": [system_prompt]},
-            {"role": "model", "parts": ["Got it! I'm Rooted AI \ud83c\udf3f How can I help?"]}
-        ]
+        messages = [{"role": "system", "content": system_prompt}]
         for h in history:
-            chat_history.append({"role": h['role'], "parts": [h['content']]})
+            messages.append({"role": h['role'], "content": h['content']})
+        messages.append({"role": "user", "content": message})
 
-        chat = model.start_chat(history=chat_history)
-        response = chat.send_message(message)
-        return jsonify({'reply': response.text})
+        response = client.chat.completions(
+            model="sarvam-30b",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=300
+        )
+        reply = response.choices[0].message.content
+        return jsonify({'reply': reply})
     except Exception as e:
         err = str(e)
-        if 'quota' in err.lower() or '429' in err or 'exhausted' in err.lower():
-            return jsonify({'reply': '\u23f3 Rooted AI is resting (free tier rate limit). Wait 30\u201360 seconds and try again \ud83c\udf3f'})
-        return jsonify({'reply': f'Something went wrong. Please try again shortly.'})
+        if 'quota' in err.lower() or '429' in err or 'rate' in err.lower():
+            return jsonify({'reply': '⏳ Rooted AI is resting a moment. Please try again in 30 seconds 🌿'})
+        return jsonify({'reply': 'Something went wrong. Please try again shortly.'})
 
 
 if __name__ == '__main__':
