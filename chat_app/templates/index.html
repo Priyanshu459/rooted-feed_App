@@ -1175,96 +1175,6 @@
       background: rgba(139, 94, 60, 0.06);
       color: var(--earth1);
     }
-
-    /* VIDEO CALL UI */
-    .video-call-modal {
-      position: fixed;
-      inset: 0;
-      background: #000;
-      z-index: 500;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .remote-video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .local-video-container {
-      position: absolute;
-      bottom: 100px;
-      right: 24px;
-      width: 150px;
-      height: 220px;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 12px 32px rgba(0,0,0,0.4);
-      background: #222;
-      border: 2px solid rgba(255,255,255,0.2);
-    }
-
-    .local-video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .call-controls {
-      position: absolute;
-      bottom: 40px;
-      display: flex;
-      gap: 20px;
-      z-index: 510;
-    }
-
-    .call-btn {
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      font-size: 24px;
-      transition: all 0.3s;
-    }
-
-    .btn-hangup { background: #ff4b4b; color: #fff; }
-    .btn-hangup:hover { background: #ff2d2d; transform: scale(1.1); }
-    .btn-mute { background: rgba(255,255,255,0.2); color: #fff; backdrop-filter: blur(10px); }
-    .btn-mute.active { background: #fff; color: #000; }
-
-    .incoming-call-overlay {
-      position: fixed;
-      top: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(-200%);
-      background: var(--earth2);
-      color: #fff;
-      padding: 20px 32px;
-      border-radius: 24px;
-      z-index: 600;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-      box-shadow: 0 24px 48px rgba(0,0,0,0.3);
-      transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
-    }
-
-    .incoming-call-overlay.show {
-      transform: translateX(-50%) translateY(0);
-    }
-
-    .caller-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
   </style>
 </head>
 
@@ -1497,9 +1407,6 @@
             <button id="messageBtn"
               style="padding:8px 16px; border-radius:20px; font-size:14px; display:none; background:none; border:1px solid var(--stone); cursor:pointer;"
               onclick="startChat()">Message</button>
-            <button id="profileCallBtn"
-              style="padding:8px 16px; border-radius:20px; font-size:14px; display:none; background:none; border:1px solid var(--stone); cursor:pointer;"
-              onclick="startChat(); setTimeout(startVideoCall, 500);">Call</button>
             <button class="btn-primary" id="followBtn"
               style="padding:8px 24px; border-radius:20px; font-size:14px; display:none;"
               onclick="toggleFollow()">Follow</button>
@@ -1535,8 +1442,6 @@
         <img id="chatAvatar" class="mini-avatar" style="width:36px; height:36px; object-fit:cover; display:none;">
         <div id="chatAvatarText" class="mini-avatar" style="width:36px; height:36px;"></div>
         <h2 id="chatName" style="font-size:18px; font-weight:600; margin:0; cursor:pointer;"></h2>
-        <div style="flex:1;"></div>
-        <div class="icon-btn" onclick="startVideoCall()" style="font-size:20px; cursor:pointer;" title="Video Call">📞</div>
       </div>
       <div id="chatMessages"
         style="flex:1; overflow-y:auto; padding:24px; background:var(--cream); display:flex; flex-direction:column; gap:12px;">
@@ -1672,6 +1577,7 @@
   </div>
   {% endif %}
 
+  </div>
   <!-- PROFILE EDIT MODAL -->
   <div id="profileEditModal"
     style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:300; align-items:center; justify-content:center;">
@@ -1724,34 +1630,6 @@
       <button
         style="width:100%; padding:16px; background:none; border:none; color:var(--stone); margin-top:8px; cursor:pointer;"
         onclick="document.getElementById('profileEditModal').style.display='none'">Cancel</button>
-    </div>
-  </div>
-
-  <!-- VIDEO CALL MODAL -->
-  <div class="video-call-modal" id="videoCallModal">
-    <video id="remoteVideo" class="remote-video" autoplay playsinline></video>
-    <div class="local-video-container">
-      <video id="localVideo" class="local-video" autoplay playsinline muted></video>
-    </div>
-    <div class="call-controls">
-      <button class="call-btn btn-mute" onclick="toggleMic()" id="micBtn">🎤</button>
-      <button class="call-btn btn-mute" onclick="toggleCam()" id="camBtn">📷</button>
-      <button class="call-btn btn-hangup" onclick="endCall()">📞</button>
-    </div>
-  </div>
-
-  <!-- INCOMING CALL OVERLAY -->
-  <div class="incoming-call-overlay" id="incomingCallOverlay">
-    <div class="caller-info">
-      <img id="incomingCallerPhoto" src="" class="mini-avatar" style="width:48px;height:48px;object-fit:cover;">
-      <div>
-        <div id="incomingCallerName" style="font-weight:700;font-size:16px;">Caller Name</div>
-        <div style="font-size:13px;opacity:0.8;">Incoming Video Call...</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:12px;">
-      <button onclick="rejectCall()" style="background:#ff4b4b;border:none;width:44px;height:44px;border-radius:50%;color:#fff;cursor:pointer;font-size:18px;">✕</button>
-      <button onclick="acceptCall()" style="background:#4A7C59;border:none;width:44px;height:44px;border-radius:50%;color:#fff;cursor:pointer;font-size:18px;">✔</button>
     </div>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -2567,7 +2445,6 @@
 
             const fbtn = document.getElementById('followBtn');
             const mbtn = document.getElementById('messageBtn');
-            const cbtn = document.getElementById('profileCallBtn');
 
             if (!u.is_self) {
               fbtn.style.display = 'block';
@@ -2581,15 +2458,12 @@
 
               if (u.is_mutual) {
                 mbtn.style.display = 'block';
-                cbtn.style.display = 'block';
               } else {
                 mbtn.style.display = 'none';
-                cbtn.style.display = 'none';
               }
             } else {
               fbtn.style.display = 'none';
               mbtn.style.display = 'none';
-              cbtn.style.display = 'none';
             }
           });
       }
@@ -2693,163 +2567,6 @@
       }
       area.appendChild(wrap);
       area.scrollTop = 99999;
-    }
-
-    // --- VIDEO CALL (WebRTC) ---
-    let peerConnection = null;
-    let localStream = null;
-    let targetCallHandle = null;
-    const rtcConfig = {
-      iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        { urls: 'stun:stun2.l.google.com:19302' },
-        { urls: 'stun:stun3.l.google.com:19302' },
-        { urls: 'stun:stun4.l.google.com:19302' }
-      ]
-    };
-
-    async function startVideoCall() {
-      if (!currentChatTarget) return;
-      targetCallHandle = currentChatTarget;
-      
-      showNotif('Calling ' + targetCallHandle + '...');
-      socket.emit('video_call_init', { target_handle: targetCallHandle });
-      
-      // Setup UI for outgoing call
-      document.getElementById('videoCallModal').style.display = 'flex';
-      await setupLocalStream();
-    }
-
-    async function setupLocalStream() {
-      try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById('localVideo').srcObject = localStream;
-      } catch (e) {
-        console.error('Error accessing media devices:', e);
-        showNotif('Could not access camera/mic ❌');
-        endCall();
-      }
-    }
-
-    socket.on('video_call_incoming', (data) => {
-      const overlay = document.getElementById('incomingCallOverlay');
-      document.getElementById('incomingCallerName').innerText = data.caller_name;
-      document.getElementById('incomingCallerPhoto').src = data.caller_photo || '';
-      targetCallHandle = data.caller_handle;
-      overlay.classList.add('show');
-      
-      // Play a ringtone logic could go here
-    });
-
-    async function acceptCall() {
-      document.getElementById('incomingCallOverlay').classList.remove('show');
-      document.getElementById('videoCallModal').style.display = 'flex';
-      await setupLocalStream();
-      socket.emit('video_call_accept', { target_handle: targetCallHandle });
-      initPeerConnection();
-    }
-
-    function rejectCall() {
-      document.getElementById('incomingCallOverlay').classList.remove('show');
-      socket.emit('video_call_reject', { target_handle: targetCallHandle });
-      targetCallHandle = null;
-    }
-
-    socket.on('video_call_accepted', async (data) => {
-      showNotif('Call connected!');
-      initPeerConnection();
-      
-      // Create Offer
-      const offer = await peerConnection.createOffer();
-      await peerConnection.setLocalDescription(offer);
-      socket.emit('video_call_offer', { offer: offer, target_handle: targetCallHandle });
-    });
-
-    socket.on('video_call_rejected', (data) => {
-      showNotif('Call rejected ❌');
-      endCall();
-    });
-
-    function initPeerConnection() {
-      peerConnection = new RTCPeerConnection(rtcConfig);
-      
-      // Add local stream tracks
-      localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-      });
-
-      // Handle remote stream
-      peerConnection.ontrack = (event) => {
-        document.getElementById('remoteVideo').srcObject = event.streams[0];
-      };
-
-      // Handle ICE candidates
-      peerConnection.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit('video_call_ice', { candidate: event.candidate, target_handle: targetCallHandle });
-        }
-      };
-    }
-
-    socket.on('video_call_offer_received', async (data) => {
-      if (!peerConnection) initPeerConnection();
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-      socket.emit('video_call_answer', { answer: answer, target_handle: targetCallHandle });
-    });
-
-    socket.on('video_call_answer_received', async (data) => {
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(data.answer));
-    });
-
-    socket.on('video_call_ice_received', async (data) => {
-      if (peerConnection) {
-        try {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } catch (e) { console.error('Error adding ICE candidate', e); }
-      }
-    });
-
-    socket.on('video_call_disconnected', () => {
-      showNotif('Call ended');
-      endCall();
-    });
-
-    function endCall() {
-      if (targetCallHandle) {
-        socket.emit('video_call_hangup', { target_handle: targetCallHandle });
-      }
-      
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-      }
-      
-      if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-      }
-      
-      document.getElementById('videoCallModal').style.display = 'none';
-      document.getElementById('localVideo').srcObject = null;
-      document.getElementById('remoteVideo').srcObject = null;
-      targetCallHandle = null;
-    }
-
-    function toggleMic() {
-      const audioTrack = localStream.getAudioTracks()[0];
-      audioTrack.enabled = !audioTrack.enabled;
-      document.getElementById('micBtn').classList.toggle('active', !audioTrack.enabled);
-      document.getElementById('micBtn').innerText = audioTrack.enabled ? '🎤' : '🔇';
-    }
-
-    function toggleCam() {
-      const videoTrack = localStream.getVideoTracks()[0];
-      videoTrack.enabled = !videoTrack.enabled;
-      document.getElementById('camBtn').classList.toggle('active', !videoTrack.enabled);
-      document.getElementById('camBtn').innerText = videoTrack.enabled ? '📷' : '🚫';
     }
   </script>
 </body>
