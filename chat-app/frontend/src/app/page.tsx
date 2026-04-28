@@ -1,67 +1,19 @@
-'use client';
-
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import SearchBar from "@/components/SearchBar";
 
 export default function Home() {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!phoneNumber) return;
-    
-    setLoading(true);
-    // Mock login flow
-    setTimeout(() => {
-      localStorage.setItem('userPhone', phoneNumber);
-      router.push('/chat');
-    }, 1000);
-  };
-
   return (
-    <main style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      padding: '20px'
-    }}>
-      <div className="glass" style={{
-        padding: '40px',
-        borderRadius: 'var(--radius-md)',
-        boxShadow: 'var(--shadow-lg)',
-        width: '100%',
-        maxWidth: '400px',
-        textAlign: 'center'
-      }}>
-        <h1 style={{ marginBottom: '8px', color: 'var(--accent-color)', fontSize: '28px' }}>
-          Earthly Chat
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: '32px' }}>
-          Connect naturally.
-        </p>
-
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ textAlign: 'left' }}>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 500 }}>
-              Phone Number
-            </label>
-            <input
-              type="tel"
-              className="input-field"
-              placeholder="+1 (555) 000-0000"
-              value={phoneNumber}
-              onChange={(e) => setPhoneNumber(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: '8px' }}>
-            {loading ? 'Joining...' : 'Join Chat'}
-          </button>
-        </form>
+    <div className="flex-1 flex flex-col items-center justify-center w-full px-4 text-center py-24 bg-gradient-to-b from-slate-50 to-white">
+      <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-slate-900 mb-6">
+        Don&apos;t sign blindly. <br className="hidden md:block" />
+        <span className="text-emerald-600">Know before you rent.</span>
+      </h1>
+      <p className="text-lg md:text-xl text-slate-600 max-w-2xl mx-auto mb-10">
+        Read real, verified reviews on maintenance, noise, pests, and safety from past tenants. Search an address or landlord to get started.
+      </p>
+      
+      <div className="w-full max-w-3xl">
+        <SearchBar />
       </div>
-    </main>
+    </div>
   );
 }

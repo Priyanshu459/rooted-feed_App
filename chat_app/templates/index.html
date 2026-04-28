@@ -1175,6 +1175,120 @@
       background: rgba(139, 94, 60, 0.06);
       color: var(--earth1);
     }
+
+    /* SKELETON LOADERS */
+    @keyframes shimmer {
+      0% { background-position: -468px 0; }
+      100% { background-position: 468px 0; }
+    }
+    .skeleton-earthy {
+      background: rgba(139, 94, 60, 0.05);
+      background-image: linear-gradient(to right, rgba(139, 94, 60, 0.05) 0%, rgba(139, 94, 60, 0.12) 20%, rgba(139, 94, 60, 0.05) 40%, rgba(139, 94, 60, 0.05) 100%);
+      background-repeat: no-repeat;
+      background-size: 800px 100%;
+      animation: shimmer 1.5s linear infinite forwards;
+      border-radius: 4px;
+    }
+
+    /* MOBILE RESPONSIVENESS */
+    @media (max-width: 768px) {
+      .right-sidebar {
+        display: none !important;
+      }
+
+      .left-sidebar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 64px;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0 8px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-right: none;
+        border-top: 1px solid rgba(139, 94, 60, 0.1);
+        z-index: 1000;
+        overflow-x: auto;
+      }
+
+      .left-sidebar::-webkit-scrollbar {
+        display: none;
+      }
+
+      .main-feed {
+        max-width: 100%;
+        margin-bottom: 64px; /* Space for bottom nav */
+        border-right: none;
+      }
+
+      .app {
+        flex-direction: column;
+      }
+
+      /* Hide less important items on mobile nav */
+      .app-logo, .post-btn-large, .left-sidebar > a {
+        display: none !important;
+      }
+
+      .nav-item {
+        width: 48px;
+        height: 48px;
+        margin-bottom: 0;
+        flex-shrink: 0;
+      }
+
+      .user-profile-mini {
+        margin-top: 0;
+        flex-shrink: 0;
+      }
+
+      /* Adjust login screen for mobile */
+      .login-card {
+        width: 90%;
+        padding: 32px 24px;
+      }
+
+      /* Adjust feed composer */
+      .composer {
+        padding: 16px;
+      }
+
+      .composer-actions {
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .action-icons select {
+        margin-left: 8px;
+      }
+      
+      .splash-info {
+        display: none; /* Hide splash info on very small mobile screens to keep login prominent */
+      }
+      
+      @media (min-width: 600px) {
+        .splash-info {
+          display: block;
+          text-align: center;
+        }
+        .splash-info div {
+          justify-content: center;
+        }
+      }
+      @media (min-width: 900px) {
+        .splash-info {
+          text-align: left;
+        }
+        .splash-info div {
+          justify-content: flex-start;
+        }
+      }
+    }
   </style>
 </head>
 
@@ -1184,7 +1298,28 @@
 
   <!-- LOGIN SCREEN -->
   {% if not current_user %}
-  <div class="login-screen" id="loginScreen">
+  <div class="login-screen" id="loginScreen" style="gap: 64px; flex-wrap: wrap; padding: 24px;">
+    
+    <!-- SPLASH INFO -->
+    <div class="splash-info" style="max-width: 440px; color: #F5ECD7; animation: slideIn 0.8s ease-out;">
+      <h1 style="font-family: 'Playfair Display', serif; font-size: 52px; margin-bottom: 20px; line-height: 1.15;">Connect with Nature & Community.</h1>
+      <p style="font-size: 18px; line-height: 1.6; color: rgba(245, 236, 215, 0.85); margin-bottom: 40px;">Rooted is your earthly social feed. Share stories, discover local trails, and grow your network with our nature-inspired AI assistant.</p>
+      
+      <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);">🌍</div>
+          <div style="font-size: 18px; font-weight: 500; letter-spacing: 0.5px;">Global & Local Feeds</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);">🌿</div>
+          <div style="font-size: 18px; font-weight: 500; letter-spacing: 0.5px;">Rooted AI Assistant</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+          <div style="width: 48px; height: 48px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); display: flex; align-items: center; justify-content: center; font-size: 24px; box-shadow: 0 8px 16px rgba(0,0,0,0.1);">🔒</div>
+          <div style="font-size: 18px; font-weight: 500; letter-spacing: 0.5px;">Private & Secure</div>
+        </div>
+      </div>
+    </div>
     <div class="login-card">
       <div class="logo-icon">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1384,6 +1519,19 @@
       <!-- POSTS AREA -->
       <div class="posts-area" id="postsArea">
         <!-- Posts render here -->
+      </div>
+    </div>
+
+    <!-- THREAD VIEW -->
+    <div class="main-feed" id="threadView" style="display:none; flex-direction:column; background:#fff;">
+      <div class="feed-header" style="display:flex; align-items:center; gap:16px; padding:12px 24px; position:sticky; top:0; z-index:10; background:rgba(255,255,255,0.85); backdrop-filter:blur(16px);">
+        <div onclick="closeThread()"
+          style="cursor:pointer; font-size:20px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:50%; transition:background 0.2s;"
+          class="icon-btn">&larr;</div>
+        <h2 style="margin:0; font-size:20px; font-weight:700; color:var(--earth1);">Post</h2>
+      </div>
+      <div class="posts-area" id="threadPostsArea" style="flex:1;">
+        <!-- Thread posts load here -->
       </div>
     </div>
 
@@ -1658,12 +1806,42 @@
       socket.emit('join', currentUser);
     }
 
+    let displayedPostsCount = 0;
+    const POSTS_PER_PAGE = 15;
+
+    socket.on('initial_posts', (posts) => {
+      ALL_POSTS = posts;
+      displayedPostsCount = 0;
+      const area = document.getElementById('postsArea');
+      if (area) {
+        area.innerHTML = '';
+        loadMorePosts();
+      }
+    });
+
+    function loadMorePosts() {
+      const area = document.getElementById('postsArea');
+      if (!area) return;
+      const nextPosts = ALL_POSTS.slice(displayedPostsCount, displayedPostsCount + POSTS_PER_PAGE);
+      if (nextPosts.length === 0) return;
+      
+      nextPosts.forEach(p => addPostToFeed(p, false, 'postsArea'));
+      displayedPostsCount += nextPosts.length;
+    }
+
+    document.getElementById('postsArea')?.addEventListener('scroll', function() {
+      if (this.scrollTop + this.clientHeight >= this.scrollHeight - 400) {
+        loadMorePosts();
+      }
+    });
+
     socket.on('receive_post', (post) => {
       // Keep global state updated
       const exists = ALL_POSTS.find(p => p.id === post.id);
       if (!exists) {
         ALL_POSTS.unshift(post);
-        addPostToFeed(post, true, 'postsArea'); // prepend to top
+        displayedPostsCount++;
+        addPostToFeed(post, true, 'postsArea'); // prepend newly created post to top
       }
 
       // If viewing profile, also render there if it matches
@@ -1861,12 +2039,17 @@
     function likePost(postId, btnEl) {
       // Optimistic UI toggle
       const isLiked = likedPosts.has(postId);
+      const countSpan = document.getElementById(`like-count-${postId}`);
+      let currentCount = parseInt(countSpan.textContent) || 0;
+
       if (isLiked) {
         likedPosts.delete(postId);
         btnEl.classList.remove('liked');
+        countSpan.textContent = currentCount > 1 ? currentCount - 1 : '';
       } else {
         likedPosts.add(postId);
         btnEl.classList.add('liked');
+        countSpan.textContent = currentCount + 1;
       }
       socket.emit('like_post', postId);
     }
@@ -1889,9 +2072,45 @@
       showNotif('Retweeted! 🔁');
     }
 
-    function bookmarkPost(postId) {
+    const bookmarkedPosts = new Set();
+    function bookmarkPost(postId, btnEl) {
+      if (bookmarkedPosts.has(postId)) {
+        bookmarkedPosts.delete(postId);
+        btnEl.style.color = '';
+        showNotif('Removed from Bookmarks');
+      } else {
+        bookmarkedPosts.add(postId);
+        btnEl.style.color = 'var(--green3)';
+        showNotif('Saved to your Bookmarks! 🔖 (+10 Score)');
+      }
       socket.emit('bookmark_post', postId);
-      showNotif('Saved to your Bookmarks! 🔖 (+10 Score)');
+    }
+
+    function showSkeletons(targetId = 'postsArea', count = 3) {
+      const area = document.getElementById(targetId);
+      if (!area) return;
+      let html = '';
+      for (let i = 0; i < count; i++) {
+        html += `
+          <div class="post-card" style="pointer-events: none;">
+            <div style="display:flex; flex-direction:column; width:100%">
+              <div style="display:flex; gap:16px;">
+                <div class="post-avatar skeleton-earthy" style="background: transparent;"></div>
+                <div class="post-content">
+                  <div class="post-header" style="gap:12px; margin-bottom: 12px; display: flex;">
+                    <div class="skeleton-earthy" style="height: 16px; width: 120px; border-radius: 8px;"></div>
+                    <div class="skeleton-earthy" style="height: 16px; width: 80px; border-radius: 8px;"></div>
+                  </div>
+                  <div class="skeleton-earthy" style="height: 16px; width: 100%; border-radius: 8px; margin-bottom: 8px;"></div>
+                  <div class="skeleton-earthy" style="height: 16px; width: 80%; border-radius: 8px; margin-bottom: 16px;"></div>
+                  <div class="skeleton-earthy" style="height: 200px; width: 100%; border-radius: 16px; margin-bottom: 16px;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+      area.innerHTML = html;
     }
 
     let currentFeedTab = 'ForYou';
@@ -1911,16 +2130,19 @@
       if (composer) composer.style.display = tab === 'ForYou' ? 'flex' : 'none';
 
       const area = document.getElementById('postsArea');
-      area.innerHTML = '';
 
       if (tab === 'ForYou') {
         if (ALL_POSTS.length > 0) {
           // Use cached posts — no server re-request needed
-          ALL_POSTS.forEach(p => addPostToFeed(p, false, 'postsArea'));
+          displayedPostsCount = 0;
+          area.innerHTML = '';
+          loadMorePosts();
         } else {
+          showSkeletons('postsArea', 5);
           socket.emit('join', {});
         }
       } else {
+        showSkeletons('postsArea', 3);
         fetch('/api/posts/following')
           .then(r => r.json())
           .then(posts => {
@@ -1943,7 +2165,7 @@
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
-      const allViews = ['feedView', 'mockView', 'exploreView', 'aiView', 'profileView', 'messagesView', 'chatView', 'notificationsView'];
+      const allViews = ['feedView', 'mockView', 'exploreView', 'aiView', 'profileView', 'messagesView', 'chatView', 'notificationsView', 'threadView'];
       allViews.forEach(v => {
         const el = document.getElementById(v);
         if (el) el.style.display = 'none';
@@ -2003,6 +2225,42 @@
       openProfile(currentUser.handle, currentUser.name);
     }
 
+    function openThread(postId) {
+      document.getElementById('feedView').style.display = 'none';
+      document.getElementById('profileView').style.display = 'none';
+      document.getElementById('exploreView').style.display = 'none';
+      
+      const tView = document.getElementById('threadView');
+      tView.style.display = 'flex';
+      
+      const tArea = document.getElementById('threadPostsArea');
+      tArea.innerHTML = '';
+      
+      // Find the main post
+      const parentPost = ALL_POSTS.find(p => p.id === postId);
+      if (parentPost) {
+        addPostToFeed(parentPost, false, 'threadPostsArea');
+        // Add a visual separator
+        tArea.innerHTML += '<div style="height:1px; background:var(--stone); opacity:0.1; margin:0 24px;"></div><div style="padding:16px 24px; font-weight:700; font-size:18px;">Replies</div>';
+        
+        // Find and render all replies
+        const replies = ALL_POSTS.filter(p => p.parentId === postId);
+        // Sort oldest first for natural reading (optional, or rely on ALL_POSTS order)
+        replies.sort((a,b) => a.timestamp - b.timestamp);
+        
+        if (replies.length > 0) {
+          replies.forEach(p => addPostToFeed(p, false, 'threadPostsArea'));
+        } else {
+          tArea.innerHTML += '<div style="padding:24px; color:var(--stone); text-align:center;">No replies yet. Be the first to reply!</div>';
+        }
+      }
+    }
+
+    function closeThread() {
+      document.getElementById('threadView').style.display = 'none';
+      document.getElementById('feedView').style.display = 'flex';
+    }
+
     // --- RENDER POST ---
     function addPostToFeed(post, prepend = false, targetId = 'postsArea') {
       // Seed the likedPosts set from server-provided userLiked flag
@@ -2018,7 +2276,7 @@
       let mediaHtml = '';
       if (post.mediaUrl) {
         if (post.mediaType === 'image') {
-          mediaHtml = `<div class="post-media"><img src="${post.mediaUrl}" alt=""></div>`;
+          mediaHtml = `<div class="post-media" onclick="openThread('${post.id}')" style="cursor:pointer;"><img src="${post.mediaUrl}" alt=""></div>`;
         } else if (post.mediaType === 'video') {
           mediaHtml = `<div class="post-media"><video src="${post.mediaUrl}" controls></video></div>`;
         }
@@ -2032,11 +2290,11 @@
           // Avoid quotes breaking HTML
           const escapedFull = safeText.replace(/'/g, "\\'").replace(/"/g, '&quot;');
           textHtml = `
-            <div class="post-text" id="text-${post.id}">
-              ${short}... <span style="color:var(--green3);cursor:pointer;font-weight:600;" onclick="document.getElementById('text-${post.id}').innerHTML='${escapedFull}';">Read More</span>
+            <div class="post-text" id="text-${post.id}" onclick="openThread('${post.id}')" style="cursor:pointer;">
+              ${short}... <span style="color:var(--green3);cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); document.getElementById('text-${post.id}').innerHTML='${escapedFull}';">Read More</span>
             </div>`;
         } else {
-          textHtml = `<div class="post-text">${safeText}</div>`;
+          textHtml = `<div class="post-text" onclick="openThread('${post.id}')" style="cursor:pointer;">${safeText}</div>`;
         }
       }
 
@@ -2082,7 +2340,7 @@
               <div class="action-icon">❤️</div>
               <span id="like-count-${post.id}">${post.likes > 0 ? post.likes : ''}</span>
             </div>
-            <div class="post-action" onclick="bookmarkPost('${post.id}')" title="Bookmark">
+            <div class="post-action" onclick="bookmarkPost('${post.id}', this)" title="Bookmark">
               <div class="action-icon">🔖</div>
             </div>
             <div class="post-action" title="Share" onclick="showNotif('Share coming soon!')">

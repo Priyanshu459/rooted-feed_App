@@ -584,9 +584,9 @@ def handle_join(user_data):
         
     # Sort algorithmically
     visible_posts.sort(key=get_score, reverse=True)
-    # Send top 100
-    for p in visible_posts[:100]:
-        emit('receive_post', post_to_dict(p, viewer_id))
+    # Send top 100 as a batch
+    batch = [post_to_dict(p, viewer_id) for p in visible_posts[:100]]
+    emit('initial_posts', batch)
 
 @socketio.on('create_post')
 def handle_create_post(data):
