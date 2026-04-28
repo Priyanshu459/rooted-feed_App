@@ -302,19 +302,21 @@ def upload_file():
             new_bio = request.form.get('bio')
             is_private = request.form.get('is_private') == 'true'
             
+            user = User.query.get(current_user.id)
             if url:
-                current_user.profile_photo_url = url
+                user.profile_photo_url = url
             if new_name:
-                current_user.display_name = new_name
+                user.display_name = new_name
             if new_bio is not None:
-                current_user.bio = new_bio
-            current_user.is_private = is_private
+                user.bio = new_bio
+            user.is_private = is_private
                 
             db.session.commit()
             return jsonify({'success': True, 'url': url, 'type': media_type, 'profile_updated': True})
         elif upload_type == 'cover':
             if url:
-                current_user.cover_photo_url = url
+                user = User.query.get(current_user.id)
+                user.cover_photo_url = url
                 db.session.commit()
             return jsonify({'success': True, 'url': url, 'type': 'image'})
             
