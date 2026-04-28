@@ -231,6 +231,23 @@ def index():
         }
     return render_template('index.html', current_user=user_data)
 
+@app.route('/robots.txt')
+def robots():
+    content = "User-agent: *\nAllow: /\nSitemap: https://rooted-feed.onrender.com/sitemap.xml"
+    return content, 200, {'Content-Type': 'text/plain'}
+
+@app.route('/sitemap.xml')
+def sitemap():
+    xml = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://rooted-feed.onrender.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>"""
+    return xml, 200, {'Content-Type': 'application/xml'}
+
 @app.route('/login/google')
 def login_google():
     redirect_uri = url_for('auth_google', _external=True)
