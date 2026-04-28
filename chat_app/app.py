@@ -48,7 +48,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 IS_PROD = os.getenv('RENDER') is not None
 app.config['SESSION_COOKIE_SECURE'] = IS_PROD
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = 'None' if IS_PROD else 'Lax'
 app.config['PREFERRED_URL_SCHEME'] = 'https' if IS_PROD else 'http'
 
 # Cloudinary Setup
@@ -234,6 +234,8 @@ def index():
 @app.route('/login/google')
 def login_google():
     redirect_uri = url_for('auth_google', _external=True)
+    if os.getenv('RENDER') and redirect_uri.startswith('http://'):
+        redirect_uri = redirect_uri.replace('http://', 'https://', 1)
     return google.authorize_redirect(redirect_uri)
 
 @app.route('/login/google/authorized')
