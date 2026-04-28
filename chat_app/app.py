@@ -23,7 +23,11 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1, x_
 
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'secret!')
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///rooted.db'
+# Database Configuration
+db_url = os.getenv('DATABASE_URL', 'sqlite:///rooted.db')
+if db_url.startswith('postgres://'):
+    db_url = db_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Session/Cookie Security (Fixes MismatchingStateError)

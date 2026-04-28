@@ -11,3 +11,4 @@ cloudinary==1.41.0
 python-dotenv==1.0.1
 flask-login==0.6.3
 sarvamai==0.0.8
+psycopg2-binary==2.9.9
