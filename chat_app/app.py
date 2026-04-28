@@ -233,7 +233,7 @@ def index():
 
 @app.route('/robots.txt')
 def robots():
-    content = "User-agent: *\nAllow: /\nSitemap: https://rooted-feed.onrender.com/sitemap.xml"
+    content = "User-agent: *\nAllow: /\nSitemap: https://www.rooted-feed.online/sitemap.xml"
     return content, 200, {'Content-Type': 'text/plain'}
 
 @app.route('/sitemap.xml')
@@ -241,7 +241,7 @@ def sitemap():
     xml = """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://rooted-feed.onrender.com/</loc>
+    <loc>https://www.rooted-feed.online/</loc>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
