@@ -1879,6 +1879,16 @@
       <button
         style="width:100%; padding:16px; background:none; border:none; color:var(--stone); margin-top:8px; cursor:pointer;"
         onclick="document.getElementById('profileEditModal').style.display='none'">Cancel</button>
+  </div>
+  <!-- EDIT POST MODAL -->
+  <div id="editPostModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:400; align-items:center; justify-content:center;" class="edit-modal-wrap">
+    <div style="background:#fff; border-radius:24px; padding:32px; width:90%; max-width:500px; position:relative;">
+      <h2 style="margin:0 0 24px 0; font-size:24px;">Edit Post</h2>
+      <textarea id="editPostText" style="width:100%; min-height:120px; padding:16px; border-radius:16px; border:1px solid rgba(139,94,60,0.2); outline:none; font-size:16px; font-family:inherit; resize:vertical; margin-bottom:24px;" placeholder="Edit your post..."></textarea>
+      <div style="display:flex; gap:12px;">
+        <button class="btn-primary" style="flex:1; padding:14px; border-radius:16px; font-size:16px;" onclick="submitEditPost()">Save Changes</button>
+        <button style="flex:1; padding:14px; background:var(--cream); border:none; border-radius:16px; color:var(--stone); font-size:16px; cursor:pointer;" onclick="closeEditModal()">Cancel</button>
+      </div>
     </div>
   </div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
@@ -2150,14 +2160,14 @@
 
     function deletePost(postId) {
       document.getElementById(`menu-${postId}`)?.classList.remove('open');
-      showConfirm('Delete this post? This cannot be undone.', () => {
+      if (window.confirm('Delete this post? This cannot be undone.')) {
         fetch(`/api/post/${postId}`, { method: 'DELETE' })
           .then(r => r.json())
           .then(data => {
             if (data.error) showNotif('Error: ' + data.error);
             else showNotif('Post deleted 🗑️');
           });
-      });
+      }
     }
 
     let editingPostId = null;
@@ -2166,11 +2176,13 @@
       editingPostId = postId;
       const cached = ALL_POSTS.find(p => p.id === postId);
       document.getElementById('editPostText').value = cached ? cached.text : '';
+      document.getElementById('editPostModal').style.display = 'flex';
       document.getElementById('editPostModal').classList.add('open');
       document.getElementById('editPostText').focus();
     }
 
     function closeEditModal() {
+      document.getElementById('editPostModal').style.display = 'none';
       document.getElementById('editPostModal').classList.remove('open');
       editingPostId = null;
     }

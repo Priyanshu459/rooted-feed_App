@@ -414,6 +414,32 @@ def post_to_dict(p, viewer_id=None):
         'userLiked': user_liked
     }
 
+@app.route('/api/post/<int:post_id>', methods=['PATCH', 'DELETE'])
+@login_required
+def modify_post(post_id):
+    post = Post.query.get(post_id)
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+        
+    if post.handle != current_user.handle:
+        return jsonify({'error': 'Unauthorized'}), 403
+        
+    if request.method == 'DELETE':
+        db.session.delete(post)
+        db.session.commit()
+        socketio.emit('delete_post', {'id': post_id})
+        return jsonify({'success': True})
+        
+    if request.method == 'PATCH':
+        data = request.json
+        if not data or 'text' not in data:
+            return jsonify({'error': 'No text provided'}), 400
+            
+        post.text = data['text']
+        db.session.commit()
+        socketio.emit('edit_post', {'id': post_id, 'text': post.text})
+        return jsonify({'success': True})
+
 @app.route('/api/posts/following')
 @login_required
 def get_following_posts():
