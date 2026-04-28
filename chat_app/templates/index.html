@@ -1480,13 +1480,7 @@
         </svg>
         <div class="unread-badge" id="navBadge" style="display:none;">0</div>
       </div>
-      <div class="nav-item" onclick="switchTab('money')" title="Rooted Money">
-        <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
-          <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="2" />
-          <path d="M2 10H22" stroke="currentColor" stroke-width="2" />
-          <circle cx="12" cy="15" r="1.5" fill="currentColor" />
-        </svg>
-      </div>
+
       <div class="nav-item" onclick="goToMyProfile()" title="My Profile">
         <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
           <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2" />
@@ -1722,15 +1716,6 @@
       </div>
     </div>
 
-    <!-- MONEY / JOBS placeholder -->
-    <div class="main-feed mock-view" id="mockView"
-      style="display:none; justify-content:center; align-items:center; text-align:center; padding:48px;">
-      <div style="font-size:48px; margin-bottom:16px;" id="mockIcon">💸</div>
-      <h2 style="font-size:32px; font-weight:700; color:var(--earth1); margin-bottom:12px;" id="mockTitle">Rooted Money
-      </h2>
-      <p style="font-size:18px; color:var(--stone); max-width:400px; line-height:1.5;">This feature is part of the
-        Rooted Everything App vision. Coming soon in Phase 4.</p>
-    </div>
 
     <!-- EXPLORE VIEW -->
     <div class="main-feed" id="exploreView" style="display:none; flex-direction:column; background:#fff;">
@@ -2362,7 +2347,7 @@
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
-      const allViews = ['feedView', 'mockView', 'exploreView', 'aiView', 'profileView', 'messagesView', 'chatView', 'notificationsView', 'threadView'];
+      const allViews = ['feedView', 'exploreView', 'aiView', 'profileView', 'messagesView', 'chatView', 'notificationsView', 'threadView'];
       allViews.forEach(v => {
         const el = document.getElementById(v);
         if (el) el.style.display = 'none';
@@ -2384,12 +2369,7 @@
       } else if (tab === 'ai') {
         document.getElementById('aiView').style.display = 'flex';
         document.getElementById('aiInput').focus();
-      } else if (tab === 'money' || tab === 'jobs') {
-        document.getElementById('mockView').style.display = 'flex';
-        const title = document.getElementById('mockTitle');
-        const icon = document.getElementById('mockIcon');
-        if (tab === 'money') { title.innerText = 'Rooted Money'; icon.innerText = '💸'; }
-        if (tab === 'jobs') { title.innerText = 'Rooted Jobs'; icon.innerText = '💼'; }
+
       } else {
         const target = document.getElementById(tab);
         if (target) target.style.display = 'flex';
@@ -2398,7 +2378,6 @@
 
     function openProfile(handle, name) {
       document.getElementById('feedView').style.display = 'none';
-      document.getElementById('mockView').style.display = 'none';
       const pView = document.getElementById('profileView');
       pView.style.display = 'flex';
 
