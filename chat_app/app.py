@@ -78,6 +78,7 @@ class User(db.Model, UserMixin):
     display_name = db.Column(db.String(100), nullable=False)
     bio = db.Column(db.String(250), default='')
     profile_photo_url = db.Column(db.String(200), default='')
+    cover_photo_url = db.Column(db.String(200), default='')
     account_tier = db.Column(db.String(20), default='Free')
     is_private = db.Column(db.Boolean, default=False)
     
@@ -194,6 +195,7 @@ def index():
             'handle': current_user.handle,
             'uuid': current_user.uuid,
             'photo': current_user.profile_photo_url,
+            'cover': current_user.cover_photo_url,
             'bio': current_user.bio,
             'is_private': current_user.is_private
         }
@@ -261,7 +263,7 @@ def upload_file():
             url = upload_result.get('secure_url')
         except Exception as e:
             return jsonify({'error': str(e)}), 500
-    elif upload_type != 'profile':
+    elif upload_type not in ('profile', 'cover'):
         return jsonify({'error': 'No media part'}), 400
         
     try:
@@ -280,6 +282,11 @@ def upload_file():
                 
             db.session.commit()
             return jsonify({'success': True, 'url': url, 'type': media_type, 'profile_updated': True})
+        elif upload_type == 'cover':
+            if url:
+                current_user.cover_photo_url = url
+                db.session.commit()
+            return jsonify({'success': True, 'url': url, 'type': 'image'})
             
         return jsonify({'success': True, 'url': url, 'type': media_type})
     except Exception as e:
@@ -304,6 +311,7 @@ def get_user_profile(handle):
         'name': user.display_name,
         'bio': user.bio,
         'photo': user.profile_photo_url,
+        'cover': user.cover_photo_url,
         'followers_count': user.followers.count(),
         'following_count': user.followed.count(),
         'is_following': is_following,
@@ -550,6 +558,20 @@ def send_dm(data):
     }
     emit('receive_message', payload, room=f"user_{current_user.id}")
     emit('receive_message', payload, room=f"user_{target_user.id}")
+
+@socketio.on('typing')
+def handle_typing(data):
+    if not current_user.is_authenticated:
+        return
+    target_handle = data.get('target_handle')
+    target_user = User.query.filter_by(handle=target_handle).first()
+    if target_user:
+        socketio.emit('user_typing', {
+            'sender_handle': current_user.handle,
+            'sender_name': current_user.display_name,
+            'is_typing': data.get('is_typing', True)
+        }, room=f"user_{target_user.id}")
+
 
 @socketio.on('join')
 def handle_join(user_data):
