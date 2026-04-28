@@ -136,7 +136,7 @@ class Conversation(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user1_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     user2_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    updated_at = db.Column(db.Integer)
+    updated_at = db.Column(db.BigInteger)
     messages = db.relationship('Message', backref='conversation', lazy='dynamic')
 
 class Message(db.Model):
@@ -144,7 +144,7 @@ class Message(db.Model):
     conversation_id = db.Column(db.String(36), db.ForeignKey('conversation.id'))
     sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     text = db.Column(db.String(1000))
-    timestamp = db.Column(db.Integer)
+    timestamp = db.Column(db.BigInteger)
     read = db.Column(db.Boolean, default=False)
 
 class Notification(db.Model):
@@ -154,7 +154,7 @@ class Notification(db.Model):
     type = db.Column(db.String(50), nullable=False) # follow, follow_request, like, retweet, message
     content = db.Column(db.String(250))
     is_read = db.Column(db.Boolean, default=False)
-    timestamp = db.Column(db.Integer)
+    timestamp = db.Column(db.BigInteger)
     
     user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('notifications', lazy='dynamic', cascade='all, delete-orphan'))
     sender = db.relationship('User', foreign_keys=[sender_id])
@@ -181,7 +181,7 @@ class Post(db.Model):
     text = db.Column(db.String(500))
     media_url = db.Column(db.String(200))
     media_type = db.Column(db.String(20))
-    timestamp = db.Column(db.Integer)
+    timestamp = db.Column(db.BigInteger)
     likes = db.Column(db.Integer, default=0)
     bookmarks = db.Column(db.Integer, default=0)
     reply_count = db.Column(db.Integer, default=0)
@@ -198,6 +198,19 @@ class PostLike(db.Model):
 
 with app.app_context():
     db.create_all()
+    
+    # Automatic migration for PostgreSQL to fix timestamp DataError
+    if db.engine.dialect.name == 'postgresql':
+        with db.engine.begin() as conn:
+            from sqlalchemy import text
+            # Alter columns to BIGINT so they can hold JavaScript millisecond timestamps
+            try:
+                conn.execute(text('ALTER TABLE post ALTER COLUMN timestamp TYPE BIGINT'))
+                conn.execute(text('ALTER TABLE notification ALTER COLUMN timestamp TYPE BIGINT'))
+                conn.execute(text('ALTER TABLE message ALTER COLUMN timestamp TYPE BIGINT'))
+                conn.execute(text('ALTER TABLE conversation ALTER COLUMN updated_at TYPE BIGINT'))
+            except Exception as e:
+                print("Migration note:", e)
 
 # Enable SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=500*1024*1024)
