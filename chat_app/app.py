@@ -26,9 +26,17 @@ app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 # Database Configuration
 db_url = os.getenv('DATABASE_URL')
 if db_url:
-    db_url = db_url.strip() # Remove any accidental spaces
-    if db_url.startswith('postgres://'):
-        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    db_url = db_url.strip()
+    # Safety: Only use it if it looks like a real database URL
+    if db_url.startswith('postgres://') or db_url.startswith('postgresql://'):
+        if db_url.startswith('postgres://'):
+            db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    elif db_url.startswith('sqlite://'):
+        pass 
+    else:
+        # If it's just instruction text or garbage, fallback to local
+        print(f"⚠️ Warning: Invalid DATABASE_URL detected ('{db_url[:20]}...'). Falling back to SQLite.")
+        db_url = 'sqlite:///rooted.db'
 else:
     db_url = 'sqlite:///rooted.db'
 
