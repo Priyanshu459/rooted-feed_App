@@ -15,5 +15,5 @@ COPY . ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Run the web service on container startup using Gunicorn.
-# The PORT environment variable is automatically injected by Cloud Run.
-CMD exec gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 --timeout 120 --bind 0.0.0.0:$PORT app:app
+# Azure Container Apps can inject the PORT environment variable, defaulting to 8000 if not set.
+CMD exec gunicorn --worker-class geventwebsocket.gunicorn.workers.GeventWebSocketWorker -w 1 --timeout 120 --bind 0.0.0.0:${PORT:-8000} app:app
