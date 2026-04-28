@@ -575,6 +575,9 @@ def handle_typing(data):
 
 @socketio.on('join')
 def handle_join(user_data):
+    if current_user.is_authenticated:
+        join_room(f"user_{current_user.id}")
+    
     # Fetch top 200 recent posts
     recent_posts = Post.query.order_by(Post.timestamp.desc()).limit(200).all()
     
