@@ -2273,7 +2273,7 @@
         isRetweet: true,
         originalPostId: postId
       });
-      showNotif('Retweeted! 🔁');
+      showNotif('Rerooted! 🔁');
     }
 
     const bookmarkedPosts = new Set();
@@ -2536,7 +2536,7 @@
 
       let metaHtml = '';
       if (post.isRetweet && post.retweetedFrom) {
-        metaHtml += `<div style="font-size:13px; color:var(--stone); margin-bottom:8px; display:flex; align-items:center; gap:6px;"><span style="font-size:16px">🔁</span> ${post.retweetedFrom} retweeted</div>`;
+        metaHtml += `<div style="font-size:13px; color:var(--stone); margin-bottom:8px; display:flex; align-items:center; gap:6px;"><span style="font-size:16px">🔁</span> ${post.retweetedFrom} rerooted</div>`;
       } else if (post.parentId && post.replyToHandle) {
         metaHtml += `<div style="font-size:13px; color:var(--stone); margin-bottom:8px;">Replying to <span onclick="openProfile('${post.replyToHandle}', '${post.replyToHandle}')" style="color:var(--green3); cursor:pointer;">${post.replyToHandle}</span></div>`;
       }
@@ -2573,9 +2573,9 @@
               <div class="action-icon">💬</div>
               <span style="display:none;">Reply</span>
             </div>
-            <div class="post-action" onclick="retweetPost('${post.originalPostId || post.id}')" title="Retweet" role="button" tabindex="0" aria-label="Repost">
+            <div class="post-action" onclick="retweetPost('${post.originalPostId || post.id}')" title="Reroot" role="button" tabindex="0" aria-label="Reroot">
               <div class="action-icon">🔁</div>
-              <span style="display:none;">Retweet</span>
+              <span style="display:none;">Reroot</span>
             </div>
             <div class="post-action like ${post.userLiked ? 'liked' : ''}" id="like-btn-${post.id}" onclick="likePost('${post.id}', this)" title="Like" role="button" tabindex="0" aria-label="Like post" aria-pressed="${post.userLiked ? 'true' : 'false'}">
               <div class="action-icon">❤️</div>
