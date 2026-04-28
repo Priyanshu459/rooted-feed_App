@@ -1190,6 +1190,80 @@
       border-radius: 4px;
     }
 
+    .rich-link:hover, .rich-mention:hover, .rich-hashtag:hover {
+      text-decoration: underline !important;
+    }
+
+    /* POST DROPDOWN MENU */
+    .post-menu-wrap {
+      position: relative;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+    .post-menu-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--stone);
+      transition: background 0.2s, color 0.2s;
+    }
+    .post-menu-btn:hover { background: rgba(139,94,60,0.1); color: var(--earth1); }
+    .post-menu-dropdown {
+      display: none;
+      position: absolute;
+      right: 0;
+      top: 36px;
+      background: #fff;
+      border: 1px solid rgba(139,94,60,0.12);
+      border-radius: 16px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+      z-index: 100;
+      min-width: 160px;
+      overflow: hidden;
+      animation: slideIn 0.15s ease-out;
+    }
+    .post-menu-dropdown.open { display: block; }
+    .post-menu-item {
+      padding: 13px 20px;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: background 0.15s;
+      font-weight: 500;
+    }
+    .post-menu-item:hover { background: rgba(139,94,60,0.06); }
+    .post-menu-item.danger { color: var(--terracotta); }
+    .post-menu-item.danger:hover { background: rgba(196,97,74,0.06); }
+
+    /* EDIT MODAL */
+    #editPostModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    #editPostModal.open { display: flex; }
+    .edit-modal-card {
+      background: #fff;
+      border-radius: 28px;
+      padding: 32px;
+      width: min(520px, 92vw);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+      animation: floatUp 0.25s ease-out;
+    }
+
     /* MOBILE RESPONSIVENESS */
     @media (max-width: 768px) {
       .right-sidebar {
@@ -1806,6 +1880,23 @@
       socket.emit('join', currentUser);
     }
 
+    socket.on('delete_post', (data) => {
+      // Remove from ALL_POSTS cache
+      ALL_POSTS = ALL_POSTS.filter(p => p.id !== data.id);
+      // Remove card from every rendered area
+      document.querySelectorAll(`#post-${data.id}`).forEach(el => el.remove());
+    });
+
+    socket.on('edit_post', (data) => {
+      // Update cache
+      const cached = ALL_POSTS.find(p => p.id === data.id);
+      if (cached) cached.text = data.text;
+      // Update rendered text in every area
+      document.querySelectorAll(`#post-${data.id} .post-text`).forEach(el => {
+        el.innerHTML = formatRichText(data.text);
+      });
+    });
+
     let displayedPostsCount = 0;
     const POSTS_PER_PAGE = 15;
 
@@ -1967,12 +2058,12 @@
               if (cropper) { cropper.destroy(); cropper = null; }
               document.getElementById('profileCropImage').style.display = 'none';
             } else {
-              alert('Save failed: ' + (data.error || 'Unknown error'));
+              showNotif('Save failed: ' + (data.error || 'Unknown error'));
               btn.innerText = 'Save Profile';
             }
           })
           .catch(() => {
-            alert('Network error saving profile.');
+            showNotif('Network error saving profile.');
             btn.innerText = 'Save Profile';
           });
       };
@@ -1998,6 +2089,64 @@
     }
 
     // --- COMPOSER ---
+    // --- POST MANAGEMENT ---
+    function togglePostMenu(postId, btn) {
+      // Close all other open menus first
+      document.querySelectorAll('.post-menu-dropdown.open').forEach(d => {
+        if (d.id !== `menu-${postId}`) d.classList.remove('open');
+      });
+      document.getElementById(`menu-${postId}`).classList.toggle('open');
+      // Close on outside click
+      const close = (e) => {
+        if (!btn.closest('.post-menu-wrap').contains(e.target)) {
+          document.getElementById(`menu-${postId}`)?.classList.remove('open');
+          document.removeEventListener('click', close);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', close), 0);
+    }
+
+    function deletePost(postId) {
+      document.getElementById(`menu-${postId}`)?.classList.remove('open');
+      if (!confirm('Delete this post? This cannot be undone.')) return;
+      fetch(`/api/post/${postId}`, { method: 'DELETE' })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) showNotif('Error: ' + data.error);
+          else showNotif('Post deleted 🗑️');
+        });
+    }
+
+    let editingPostId = null;
+    function openEditPost(postId) {
+      document.getElementById(`menu-${postId}`)?.classList.remove('open');
+      editingPostId = postId;
+      const cached = ALL_POSTS.find(p => p.id === postId);
+      document.getElementById('editPostText').value = cached ? cached.text : '';
+      document.getElementById('editPostModal').classList.add('open');
+      document.getElementById('editPostText').focus();
+    }
+
+    function closeEditModal() {
+      document.getElementById('editPostModal').classList.remove('open');
+      editingPostId = null;
+    }
+
+    function submitEditPost() {
+      const newText = document.getElementById('editPostText').value.trim();
+      if (!newText || !editingPostId) return;
+      fetch(`/api/post/${editingPostId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newText })
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) showNotif('Error: ' + data.error);
+          else { showNotif('Post updated ✅'); closeEditModal(); }
+        });
+    }
+
     function autoResize(el) {
       el.style.height = 'auto';
       el.style.height = el.scrollHeight + 'px';
@@ -2261,6 +2410,34 @@
       document.getElementById('feedView').style.display = 'flex';
     }
 
+    function formatRichText(text) {
+      if (!text) return '';
+      let safeText = text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      
+      const urls = [];
+      const urlRegex = /(https?:\/\/[^\s]+)/g;
+      safeText = safeText.replace(urlRegex, match => {
+        urls.push(match);
+        return `__URL_${urls.length - 1}__`;
+      });
+
+      safeText = safeText.replace(/@([a-zA-Z0-9_]+)/g, (match, handle) => {
+        return `<span class="rich-mention" style="color:var(--green3); cursor:pointer; font-weight:600;" onclick="event.stopPropagation(); openProfile('${handle}', '${handle}')">${match}</span>`;
+      });
+
+      safeText = safeText.replace(/#([a-zA-Z0-9_]+)/g, (match, tag) => {
+        return `<span class="rich-hashtag" style="color:var(--green3); cursor:pointer; font-weight:600;" onclick="event.stopPropagation(); document.getElementById('searchExplore').value='${match}'; switchTab('explore'); filterExplorePosts();">${match}</span>`;
+      });
+
+      safeText = safeText.replace(/__URL_(\d+)__/g, (match, i) => {
+        const url = urls[i];
+        return `<a href="${url}" target="_blank" onclick="event.stopPropagation();" class="rich-link" style="color:var(--green3); text-decoration:none;">${url}</a>`;
+      });
+
+      safeText = safeText.replace(/\n/g, '<br>');
+      return safeText;
+    }
+
     // --- RENDER POST ---
     function addPostToFeed(post, prepend = false, targetId = 'postsArea') {
       // Seed the likedPosts set from server-provided userLiked flag
@@ -2284,17 +2461,19 @@
 
       let textHtml = '';
       if (post.text) {
-        const safeText = post.text.replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, '<br>');
-        if (safeText.length > 280) {
-          const short = safeText.substring(0, 280);
+        const formattedText = formatRichText(post.text);
+        if (post.text.length > 280) {
+          const shortText = post.text.substring(0, 280);
+          const formattedShort = formatRichText(shortText);
+          
           // Avoid quotes breaking HTML
-          const escapedFull = safeText.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          const escapedFull = formattedText.replace(/'/g, "\\'").replace(/"/g, '&quot;');
           textHtml = `
             <div class="post-text" id="text-${post.id}" onclick="openThread('${post.id}')" style="cursor:pointer;">
-              ${short}... <span style="color:var(--green3);cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); document.getElementById('text-${post.id}').innerHTML='${escapedFull}';">Read More</span>
+              ${formattedShort}... <span style="color:var(--green3);cursor:pointer;font-weight:600;" onclick="event.stopPropagation(); document.getElementById('text-${post.id}').innerHTML='${escapedFull}';">Read More</span>
             </div>`;
         } else {
-          textHtml = `<div class="post-text" onclick="openThread('${post.id}')" style="cursor:pointer;">${safeText}</div>`;
+          textHtml = `<div class="post-text" onclick="openThread('${post.id}')" style="cursor:pointer;">${formattedText}</div>`;
         }
       }
 
@@ -2313,6 +2492,18 @@
         metaHtml += `<div style="font-size:13px; color:var(--stone); margin-bottom:8px;">Replying to <span onclick="openProfile('${post.replyToHandle}', '${post.replyToHandle}')" style="color:var(--green3); cursor:pointer;">${post.replyToHandle}</span></div>`;
       }
 
+      let menuHtml = '';
+      if (currentUser && post.handle === currentUser.handle) {
+        menuHtml = `
+          <div class="post-menu-wrap">
+            <button class="post-menu-btn" onclick="togglePostMenu('${post.id}', this)" aria-label="Post options">&#8943;</button>
+            <div class="post-menu-dropdown" id="menu-${post.id}">
+              <div class="post-menu-item" onclick="openEditPost('${post.id}')">✏️ Edit</div>
+              <div class="post-menu-item danger" onclick="deletePost('${post.id}')">🗑️ Delete</div>
+            </div>
+          </div>`;
+      }
+
       card.innerHTML = `
     <div style="display:flex; flex-direction:column; width:100%">
       ${metaHtml}
@@ -2324,6 +2515,7 @@
             <span class="post-handle" onclick="openProfile('${post.handle}', '${post.sender}')" style="cursor:pointer;">${post.handle}</span>
             <span class="post-time">${timeStr}</span>
             ${post.node && post.node !== 'For You' ? `<span style="font-size:12px; background:rgba(74,124,89,0.1); color:var(--green3); padding:4px 8px; border-radius:12px; margin-left:8px; font-weight:600;">${post.node}</span>` : ''}
+            ${menuHtml}
           </div>
           ${textHtml}
           ${mediaHtml}
@@ -2499,33 +2691,43 @@
           const cl = document.getElementById('convList');
           cl.innerHTML = '';
           let totalUnread = 0;
-          convs.forEach(c => {
-            totalUnread += c.unread_count;
-            const item = document.createElement('div');
-            item.className = 'conv-item';
-            item.onclick = () => openChat(c.other_user.handle, c.other_user.name, c.other_user.photo);
+          
+          if (convs.length === 0) {
+            cl.innerHTML = `
+              <div style="text-align:center; padding:48px; color:var(--stone); animation: slideIn 0.4s ease-out;">
+                <div style="font-size:48px; margin-bottom:16px;">🕊️</div>
+                <div style="font-size:18px; font-weight:600; color:var(--earth1);">No messages yet</div>
+                <div style="font-size:14px; margin-top:8px;">Visit a profile to start a conversation!</div>
+              </div>`;
+          } else {
+            convs.forEach(c => {
+              totalUnread += c.unread_count;
+              const item = document.createElement('div');
+              item.className = 'conv-item';
+              item.onclick = () => openChat(c.other_user.handle, c.other_user.name, c.other_user.photo);
 
-            let photoHtml = c.other_user.photo ? `<img src="${c.other_user.photo}" class="mini-avatar" style="object-fit:cover;">` : `<div class="mini-avatar">${c.other_user.name[0].toUpperCase()}</div>`;
-            let unreadHtml = c.unread_count > 0 ? `<div class="unread-badge" style="position:static;">${c.unread_count}</div>` : '';
+              let photoHtml = c.other_user.photo ? `<img src="${c.other_user.photo}" class="mini-avatar" style="object-fit:cover;">` : `<div class="mini-avatar">${c.other_user.name[0].toUpperCase()}</div>`;
+              let unreadHtml = c.unread_count > 0 ? `<div class="unread-badge" style="position:static;">${c.unread_count}</div>` : '';
 
-            const d = new Date(c.timestamp);
-            const timeStr = d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
+              const d = new Date(c.timestamp);
+              const timeStr = d.getHours() + ':' + (d.getMinutes() < 10 ? '0' : '') + d.getMinutes();
 
-            item.innerHTML = `
-                ${photoHtml}
-                <div style="flex:1;">
-                    <div style="display:flex; justify-content:space-between; align-items:baseline;">
-                        <strong style="color:var(--earth1);">${c.other_user.name}</strong>
-                        <span style="font-size:12px; color:var(--stone);">${timeStr}</span>
-                    </div>
-                    <div style="font-size:14px; color:var(--stone); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">
-                        ${c.last_message}
-                    </div>
-                </div>
-                ${unreadHtml}
-            `;
-            cl.appendChild(item);
-          });
+              item.innerHTML = `
+                  ${photoHtml}
+                  <div style="flex:1;">
+                      <div style="display:flex; justify-content:space-between; align-items:baseline;">
+                          <strong style="color:var(--earth1);">${c.other_user.name}</strong>
+                          <span style="font-size:12px; color:var(--stone);">${timeStr}</span>
+                      </div>
+                      <div style="font-size:14px; color:var(--stone); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px;">
+                          ${c.last_message}
+                      </div>
+                  </div>
+                  ${unreadHtml}
+              `;
+              cl.appendChild(item);
+            });
+          }
 
           const badge = document.getElementById('navBadge');
           if (totalUnread > 0) { badge.style.display = 'flex'; badge.textContent = totalUnread; }
@@ -2623,39 +2825,49 @@
         .then(notifs => {
           const nl = document.getElementById('notifList');
           nl.innerHTML = '';
-          notifs.forEach(n => {
-            const item = document.createElement('div');
-            item.className = 'conv-item';
-            if (!n.is_read) item.style.background = 'rgba(139,94,60,0.05)';
+          
+          if (notifs.length === 0) {
+            nl.innerHTML = `
+              <div style="text-align:center; padding:48px; color:var(--stone); animation: slideIn 0.4s ease-out;">
+                <div style="font-size:48px; margin-bottom:16px;">🪹</div>
+                <div style="font-size:18px; font-weight:600; color:var(--earth1);">All caught up!</div>
+                <div style="font-size:14px; margin-top:8px;">You have no new notifications.</div>
+              </div>`;
+          } else {
+            notifs.forEach(n => {
+              const item = document.createElement('div');
+              item.className = 'conv-item';
+              if (!n.is_read) item.style.background = 'rgba(139,94,60,0.05)';
 
-            let photoHtml = n.sender_photo ? `<img src="${n.sender_photo}" class="mini-avatar" style="object-fit:cover;">` : (n.sender_name ? `<div class="mini-avatar">${n.sender_name[0].toUpperCase()}</div>` : `<div class="mini-avatar">?</div>`);
+              let photoHtml = n.sender_photo ? `<img src="${n.sender_photo}" class="mini-avatar" style="object-fit:cover;">` : (n.sender_name ? `<div class="mini-avatar">${n.sender_name[0].toUpperCase()}</div>` : `<div class="mini-avatar">?</div>`);
 
-            let actionsHtml = '';
-            if (n.type === 'follow_request') {
-              actionsHtml = `
-                    <div style="display:flex; gap:8px; margin-top:8px;">
-                        <button class="btn-primary" style="padding:6px 12px; font-size:13px; border-radius:16px;" onclick="acceptFollow('${n.sender_handle}', event)">Accept</button>
-                        <button style="padding:6px 12px; font-size:13px; border-radius:16px; background:var(--stone); color:white; border:none; cursor:pointer;" onclick="declineFollow('${n.sender_handle}', event)">Decline</button>
-                    </div>
-                `;
-            }
+              let actionsHtml = '';
+              if (n.type === 'follow_request') {
+                actionsHtml = `
+                      <div style="display:flex; gap:8px; margin-top:8px;">
+                          <button class="btn-primary" style="padding:6px 12px; font-size:13px; border-radius:16px;" onclick="acceptFollow('${n.sender_handle}', event)">Accept</button>
+                          <button style="padding:6px 12px; font-size:13px; border-radius:16px; background:var(--stone); color:white; border:none; cursor:pointer;" onclick="declineFollow('${n.sender_handle}', event)">Decline</button>
+                      </div>
+                  `;
+              }
 
-            item.innerHTML = `
-                ${photoHtml}
-                <div style="flex:1;">
-                    <div style="color:var(--earth1); font-size:15px;">${n.content}</div>
-                    ${actionsHtml}
-                </div>
-            `;
-            if (n.sender_handle) {
-              item.onclick = (e) => {
-                if (e.target.tagName !== 'BUTTON') {
-                  openProfile(n.sender_handle, n.sender_name);
-                }
-              };
-            }
-            nl.appendChild(item);
-          });
+              item.innerHTML = `
+                  ${photoHtml}
+                  <div style="flex:1;">
+                      <div style="color:var(--earth1); font-size:15px;">${n.content}</div>
+                      ${actionsHtml}
+                  </div>
+              `;
+              if (n.sender_handle) {
+                item.onclick = (e) => {
+                  if (e.target.tagName !== 'BUTTON') {
+                    openProfile(n.sender_handle, n.sender_name);
+                  }
+                };
+              }
+              nl.appendChild(item);
+            });
+          }
         });
     }
 
@@ -2827,6 +3039,24 @@
       area.scrollTop = 99999;
     }
   </script>
+
+  <!-- EDIT POST MODAL -->
+  <div id="editPostModal" onclick="if(event.target===this) closeEditModal()">
+    <div class="edit-modal-card">
+      <h2 style="font-family:'Playfair Display',serif; font-size:22px; color:var(--earth1); margin-bottom:20px;">Edit Post</h2>
+      <textarea id="editPostText"
+        style="width:100%; min-height:120px; font-size:17px; font-family:inherit; color:var(--earth1); border:1px solid rgba(139,94,60,0.2); border-radius:16px; padding:16px; outline:none; resize:vertical; background:rgba(139,94,60,0.03); line-height:1.5;"
+        placeholder="What's on your mind?"
+        onkeydown="if(event.ctrlKey&&event.key==='Enter') submitEditPost()"></textarea>
+      <div style="font-size:12px; color:var(--stone); margin-top:6px;">Ctrl+Enter to save</div>
+      <div style="display:flex; gap:12px; margin-top:20px; justify-content:flex-end;">
+        <button onclick="closeEditModal()"
+          style="padding:10px 24px; border-radius:20px; border:1px solid rgba(139,94,60,0.2); background:none; cursor:pointer; font-family:inherit; font-size:15px; color:var(--stone);">Cancel</button>
+        <button class="btn-primary" onclick="submitEditPost()" style="padding:10px 28px;">Save</button>
+      </div>
+    </div>
+  </div>
+
 </body>
 
 </html>

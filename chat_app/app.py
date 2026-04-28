@@ -687,6 +687,51 @@ def handle_like_post(post_id):
         db.session.commit()
         emit('update_likes', {'id': post_id, 'likes': post.likes, 'userLiked': True}, broadcast=True)
 
+@app.route('/api/post/<post_id>', methods=['DELETE'])
+@login_required
+def delete_post(post_id):
+    post = Post.query.get(post_id)
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+    if post.handle != current_user.handle:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    # Decrement parent reply count
+    if post.parent_id:
+        parent = Post.query.get(post.parent_id)
+        if parent:
+            parent.reply_count = max(0, parent.reply_count - 1)
+
+    db.session.delete(post)
+    db.session.commit()
+
+    # Broadcast deletion to all clients
+    socketio.emit('delete_post', {'id': post_id}, broadcast=True)
+    return jsonify({'success': True})
+
+
+@app.route('/api/post/<post_id>', methods=['PATCH'])
+@login_required
+def edit_post(post_id):
+    post = Post.query.get(post_id)
+    if not post:
+        return jsonify({'error': 'Post not found'}), 404
+    if post.handle != current_user.handle:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.get_json()
+    new_text = data.get('text', '').strip()
+    if not new_text:
+        return jsonify({'error': 'Text cannot be empty'}), 400
+
+    post.text = new_text
+    db.session.commit()
+
+    # Broadcast update to all clients
+    socketio.emit('edit_post', {'id': post_id, 'text': new_text}, broadcast=True)
+    return jsonify({'success': True})
+
+
 @app.route('/api/ai/chat', methods=['POST'])
 @login_required
 def ai_chat():
