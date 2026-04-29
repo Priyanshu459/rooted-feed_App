@@ -2451,7 +2451,7 @@
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
-      const allViews = ['feedView', 'exploreView', 'aiView', 'profileView', 'messagesView', 'chatView', 'notificationsView', 'threadView'];
+      const allViews = ['feedView', 'exploreView', 'aiView', 'profileView', 'messagesView', 'chatView', 'notificationsView', 'threadView', 'floraProfileView'];
       allViews.forEach(v => {
         const el = document.getElementById(v);
         if (el) el.style.display = 'none';
@@ -2844,8 +2844,8 @@
     }
 
     function fetchConversations() {
-      // Fetch floras first
-      fetch('/api/my_floras')
+      // Fetch floras first (use cache-buster to ensure real-time updates)
+      fetch(`/api/my_floras?t=${Date.now()}`)
         .then(r => r.json())
         .then(floras => {
           const fl = document.getElementById('floraList');
@@ -2872,7 +2872,7 @@
           }
         });
 
-      fetch('/api/conversations')
+      fetch(`/api/conversations?t=${Date.now()}`)
         .then(r => r.json())
         .then(convs => {
           const cl = document.getElementById('convList');
@@ -3327,7 +3327,7 @@
       const list = document.getElementById('floraMembersList');
       list.innerHTML = '<div style="color:var(--stone); font-size:14px;">Loading mutuals...</div>';
       
-      fetch('/api/mutual_followers')
+      fetch(`/api/mutual_followers?t=${Date.now()}`)
         .then(r => r.json())
         .then(mutuals => {
           list.innerHTML = '';
@@ -3397,7 +3397,6 @@
           closeFloraModal();
           showNotif(`Flora '${data.name}' created! 🌿`);
           openMessages(); 
-          fetchConversations();
         } else {
           showNotif('Failed to create Flora', 'error');
         }
