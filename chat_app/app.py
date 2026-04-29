@@ -212,87 +212,97 @@ class PostLike(db.Model):
     post_id = db.Column(db.String(50), db.ForeignKey('post.id'), primary_key=True)
 
 with app.app_context():
-    db.create_all()
-    
-    # Automatic migration for PostgreSQL to fix timestamp DataError
-    if db.engine.dialect.name == 'postgresql':
-        with db.engine.begin() as conn:
+    try:
+        db.create_all()
+    except Exception as e:
+        print(f"db.create_all() note: {e}")
+
+    # PostgreSQL-specific migrations (BIGINT columns + indexes)
+    try:
+        if db.engine.dialect.name == 'postgresql':
             from sqlalchemy import text
-            # Alter columns to BIGINT so they can hold JavaScript millisecond timestamps
-            try:
-                conn.execute(text('ALTER TABLE post ALTER COLUMN timestamp TYPE BIGINT'))
-                conn.execute(text('ALTER TABLE notification ALTER COLUMN timestamp TYPE BIGINT'))
-                conn.execute(text('ALTER TABLE message ALTER COLUMN timestamp TYPE BIGINT'))
-                conn.execute(text('ALTER TABLE conversation ALTER COLUMN updated_at TYPE BIGINT'))
-            except Exception as e:
-                print("Migration note:", e)
-                
-            # Performance Optimization: Create Indexes for fast querying
-            try:
-                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_timestamp ON post (timestamp DESC)'))
-                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_node ON post (node)'))
-                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_parent_id ON post (parent_id)'))
-                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_handle ON post (handle)'))
-                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_notification_user_id ON notification (user_id)'))
-                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_notification_timestamp ON notification (timestamp DESC)'))
-                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_message_conv_id ON message (conversation_id)'))
-            except Exception as e:
-                print("Index creation note:", e)
+            with db.engine.begin() as conn:
+                for stmt in [
+                    'ALTER TABLE post ALTER COLUMN timestamp TYPE BIGINT',
+                    'ALTER TABLE notification ALTER COLUMN timestamp TYPE BIGINT',
+                    'ALTER TABLE message ALTER COLUMN timestamp TYPE BIGINT',
+                    'ALTER TABLE conversation ALTER COLUMN updated_at TYPE BIGINT',
+                    'CREATE INDEX IF NOT EXISTS idx_post_timestamp ON post (timestamp DESC)',
+                    'CREATE INDEX IF NOT EXISTS idx_post_node ON post (node)',
+                    'CREATE INDEX IF NOT EXISTS idx_post_parent_id ON post (parent_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_post_handle ON post (handle)',
+                    'CREATE INDEX IF NOT EXISTS idx_notification_user_id ON notification (user_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_notification_timestamp ON notification (timestamp DESC)',
+                    'CREATE INDEX IF NOT EXISTS idx_message_conv_id ON message (conversation_id)',
+                ]:
+                    try:
+                        conn.execute(text(stmt))
+                    except Exception:
+                        pass
+    except Exception as e:
+        print(f"PostgreSQL migration note: {e}")
 
-    # Universal safe column migrations — works on BOTH PostgreSQL and SQLite
-    # These run every startup but are no-ops if columns/tables already exist
-    with db.engine.begin() as conn:
-        from sqlalchemy import text, inspect
-        inspector = inspect(db.engine)
+    # Universal safe schema migrations — safe on both PostgreSQL and SQLite
+    try:
+        from sqlalchemy import text, inspect as sa_inspect
+        inspector = sa_inspect(db.engine)
 
-        # Add cover_photo_url to user table if missing
-        existing_user_cols = [c['name'] for c in inspector.get_columns('user')]
-        if 'cover_photo_url' not in existing_user_cols:
-            try:
-                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN cover_photo_url VARCHAR(200) DEFAULT ''"))
+        # Add cover_photo_url column if missing
+        try:
+            existing_cols = [c['name'] for c in inspector.get_columns('user')]
+            if 'cover_photo_url' not in existing_cols:
+                with db.engine.begin() as conn:
+                    conn.execute(text("ALTER TABLE \"user\" ADD COLUMN cover_photo_url VARCHAR(200) DEFAULT ''"))
                 print("Migration: Added cover_photo_url to user table.")
-            except Exception as e:
-                print(f"Migration note (cover_photo_url): {e}")
+        except Exception as e:
+            print(f"Migration note (cover_photo_url): {e}")
 
-        # Ensure flora and flora_members tables exist
-        existing_tables = inspector.get_table_names()
-        if 'flora' not in existing_tables:
-            try:
-                if db.engine.dialect.name == 'postgresql':
-                    conn.execute(text("""
-                        CREATE TABLE IF NOT EXISTS flora (
-                            id VARCHAR(36) NOT NULL PRIMARY KEY,
-                            name VARCHAR(100) NOT NULL,
-                            description VARCHAR(500),
-                            creator_id INTEGER REFERENCES "user" (id),
-                            created_at BIGINT
-                        )
-                    """))
-                else:
-                    conn.execute(text("""
-                        CREATE TABLE IF NOT EXISTS flora (
-                            id VARCHAR(36) NOT NULL PRIMARY KEY,
-                            name VARCHAR(100) NOT NULL,
-                            description VARCHAR(500),
-                            creator_id INTEGER,
-                            created_at BIGINT
-                        )
-                    """))
+        # Create flora table if missing
+        try:
+            existing_tables = inspector.get_table_names()
+            if 'flora' not in existing_tables:
+                with db.engine.begin() as conn:
+                    if db.engine.dialect.name == 'postgresql':
+                        conn.execute(text("""
+                            CREATE TABLE IF NOT EXISTS flora (
+                                id VARCHAR(36) NOT NULL PRIMARY KEY,
+                                name VARCHAR(100) NOT NULL,
+                                description VARCHAR(500),
+                                creator_id INTEGER REFERENCES "user" (id),
+                                created_at BIGINT
+                            )
+                        """))
+                    else:
+                        conn.execute(text("""
+                            CREATE TABLE IF NOT EXISTS flora (
+                                id VARCHAR(36) NOT NULL PRIMARY KEY,
+                                name VARCHAR(100) NOT NULL,
+                                description VARCHAR(500),
+                                creator_id INTEGER,
+                                created_at BIGINT
+                            )
+                        """))
                 print("Migration: Created flora table.")
-            except Exception as e:
-                print(f"Migration note (flora table): {e}")
+        except Exception as e:
+            print(f"Migration note (flora table): {e}")
 
-        if 'flora_members' not in existing_tables:
-            try:
-                conn.execute(text("""
-                    CREATE TABLE IF NOT EXISTS flora_members (
-                        flora_id VARCHAR(36),
-                        user_id INTEGER
-                    )
-                """))
+        # Create flora_members table if missing
+        try:
+            existing_tables2 = sa_inspect(db.engine).get_table_names()
+            if 'flora_members' not in existing_tables2:
+                with db.engine.begin() as conn:
+                    conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS flora_members (
+                            flora_id VARCHAR(36),
+                            user_id INTEGER
+                        )
+                    """))
                 print("Migration: Created flora_members table.")
-            except Exception as e:
-                print(f"Migration note (flora_members table): {e}")
+        except Exception as e:
+            print(f"Migration note (flora_members table): {e}")
+
+    except Exception as e:
+        print(f"Universal migration error (non-fatal): {e}")
 
 # Enable SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=500*1024*1024, async_mode='eventlet')
