@@ -2848,8 +2848,13 @@
       fetch(`/api/my_floras?t=${Date.now()}`)
         .then(r => r.json())
         .then(floras => {
+          console.log('[Flora] my_floras response:', floras);
           const fl = document.getElementById('floraList');
           fl.innerHTML = '';
+          if (!Array.isArray(floras)) {
+            console.warn('[Flora] my_floras returned non-array:', floras);
+            return;
+          }
           if (floras.length > 0) {
             const header = document.createElement('div');
             header.style.cssText = 'padding:12px 24px; font-size:12px; font-weight:700; color:var(--stone); text-transform:uppercase; letter-spacing:1px;';
@@ -2870,7 +2875,8 @@
               fl.appendChild(item);
             });
           }
-        });
+        })
+        .catch(err => console.error('[Flora] my_floras fetch error:', err));
 
       fetch(`/api/conversations?t=${Date.now()}`)
         .then(r => r.json())
