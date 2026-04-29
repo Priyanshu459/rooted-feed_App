@@ -953,6 +953,23 @@ def create_flora():
     db.session.commit()
     return jsonify({'success': True, 'id': flora.id, 'name': flora.name})
 
+@app.route('/api/my_floras')
+@login_required
+def get_my_floras():
+    floras = current_user.floras.order_by(Flora.created_at.desc()).all()
+    res = []
+    for f in floras:
+        members = [{'id': u.id, 'name': u.display_name, 'handle': u.handle, 'photo': u.profile_photo_url} for u in f.members]
+        res.append({
+            'id': f.id,
+            'name': f.name,
+            'description': f.description,
+            'created_at': f.created_at,
+            'members': members,
+            'creator_id': f.creator_id
+        })
+    return jsonify(res)
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3001))
     socketio.run(app, host='0.0.0.0', port=port, debug=True)

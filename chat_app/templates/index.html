@@ -1746,6 +1746,9 @@
           <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:24px;">✕</div>
         </div>
       </div>
+      <div id="floraList" style="padding:0; background:var(--cream); border-bottom:1px solid rgba(139,94,60,0.1);">
+        <!-- floras load here -->
+      </div>
       <div id="convList" style="flex:1; overflow-y:auto; padding:0;">
         <!-- conversations load here -->
       </div>
@@ -1774,6 +1777,23 @@
           oninput="handleTypingInput()">
         <button class="btn-primary" style="padding:0 24px; border-radius:24px; font-weight:600;"
           onclick="sendDM()">Send</button>
+      </div>
+    </div>
+
+    <!-- FLORA PROFILE VIEW -->
+    <div class="main-feed" id="floraProfileView" style="display:none; flex-direction:column; background:#fff;">
+      <div class="feed-header" style="display:flex; align-items:center; gap:12px; padding:12px 24px;">
+        <div onclick="openMessages()" style="cursor:pointer; color:var(--stone); font-size:24px;">←</div>
+        <h2 style="font-size:20px; font-weight:700;">Flora Profile</h2>
+      </div>
+      <div style="padding:32px 24px; text-align:center; border-bottom:1px solid rgba(139,94,60,0.1);">
+        <div style="width:80px;height:80px;border-radius:50%;background:var(--green3);color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;margin:0 auto 16px auto;">🌿</div>
+        <h1 id="fpName" style="font-size:28px; margin-bottom:8px; color:var(--earth1);"></h1>
+        <p id="fpDesc" style="color:var(--stone); margin-bottom:0; font-size:15px;"></p>
+      </div>
+      <div style="padding:24px;">
+        <h3 style="margin-bottom:16px; font-size:14px; font-weight:700; color:var(--stone); text-transform:uppercase; letter-spacing:1px;">Members</h3>
+        <div id="fpMembers" style="display:flex; flex-direction:column; gap:12px;"></div>
       </div>
     </div>
 
@@ -2824,6 +2844,34 @@
     }
 
     function fetchConversations() {
+      // Fetch floras first
+      fetch('/api/my_floras')
+        .then(r => r.json())
+        .then(floras => {
+          const fl = document.getElementById('floraList');
+          fl.innerHTML = '';
+          if (floras.length > 0) {
+            const header = document.createElement('div');
+            header.style.cssText = 'padding:12px 24px; font-size:12px; font-weight:700; color:var(--stone); text-transform:uppercase; letter-spacing:1px;';
+            header.textContent = 'My Floras';
+            fl.appendChild(header);
+            
+            floras.forEach(f => {
+              const item = document.createElement('div');
+              item.className = 'conv-item';
+              item.onclick = () => openFloraProfile(f);
+              item.innerHTML = `
+                <div style="width:48px;height:48px;border-radius:50%;background:var(--green3);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0;">🌿</div>
+                <div style="flex:1;">
+                    <div style="font-weight:700; color:var(--earth1);">${f.name}</div>
+                    <div style="font-size:13px; color:var(--stone); margin-top:2px;">${f.members.length} members</div>
+                </div>
+              `;
+              fl.appendChild(item);
+            });
+          }
+        });
+
       fetch('/api/conversations')
         .then(r => r.json())
         .then(convs => {
@@ -3304,6 +3352,30 @@
         });
     }
 
+    function openFloraProfile(f) {
+      switchTab('floraProfileView');
+      document.getElementById('fpName').textContent = f.name;
+      document.getElementById('fpDesc').textContent = f.description || 'No description provided.';
+      
+      const ml = document.getElementById('fpMembers');
+      ml.innerHTML = '';
+      f.members.forEach(m => {
+        const item = document.createElement('div');
+        item.style.cssText = 'display:flex; align-items:center; gap:12px; cursor:pointer; padding:8px; border-radius:12px; transition:background 0.2s;';
+        item.onmouseover = () => item.style.background = 'rgba(139,94,60,0.05)';
+        item.onmouseout = () => item.style.background = 'transparent';
+        item.onclick = () => openProfile(m.handle, m.name);
+        item.innerHTML = `
+          <div class="mini-avatar" style="width:40px; height:40px;">${m.photo ? `<img src="${m.photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : m.name[0].toUpperCase()}</div>
+          <div style="flex:1;">
+            <div style="font-weight:600; font-size:15px; color:var(--earth1);">${m.name}</div>
+            <div style="font-size:13px; color:var(--stone);">${m.handle}</div>
+          </div>
+        `;
+        ml.appendChild(item);
+      });
+    }
+
     function closeFloraModal() {
       document.getElementById('createFloraModal').style.display = 'none';
     }
@@ -3325,6 +3397,7 @@
           closeFloraModal();
           showNotif(`Flora '${data.name}' created! 🌿`);
           openMessages(); 
+          fetchConversations();
         } else {
           showNotif('Failed to create Flora', 'error');
         }
