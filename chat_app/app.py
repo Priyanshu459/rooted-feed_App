@@ -945,9 +945,12 @@ def create_flora():
     db.session.add(flora)
     
     flora.members.append(current_user)
+    followed_list = current_user.followed.all()
+    followers_list = current_user.followers.all()
+    
     for m_id in member_ids:
         user = User.query.get(m_id)
-        if user and current_user.is_following(user) and user.is_following(current_user):
+        if user and user in followed_list and user in followers_list:
             flora.members.append(user)
             
     db.session.commit()

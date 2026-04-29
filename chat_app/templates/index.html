@@ -3400,6 +3400,8 @@
         } else {
           showNotif('Failed to create Flora', 'error');
         }
+      }).catch(err => {
+        showNotif('Server error while creating Flora', 'error');
       });
     }
   </script>
