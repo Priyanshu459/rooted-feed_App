@@ -1,0 +1,21 @@
+{
+  "name": "Rooted Feed",
+  "short_name": "Rooted",
+  "description": "The internet's most authentic social media platform.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBF7F0",
+  "theme_color": "#4A7C59",
+  "icons": [
+    {
+      "src": "/static/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

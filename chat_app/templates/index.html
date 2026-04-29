@@ -11,12 +11,17 @@
   <meta name="description" content="Rooted is the new social feed connecting you to authentic conversations. Join the Rooted Feed today to discover community, explore trends, and engage in real-time.">
   <meta name="keywords" content="Rooted, Rooted Feed, Social Media, Authentic Networking, Community, Real-time Chat">
   <meta name="author" content="Rooted Social">
+  <meta name="theme-color" content="#4A7C59">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
   
   <!-- Open Graph / Social Media Previews -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="Rooted Feed">
   <meta property="og:description" content="Join the Rooted Feed. The internet's most authentic social media platform.">
   <meta property="og:site_name" content="Rooted Feed">
+  <meta property="og:url" content="https://rooted-feed.online/">
+  <meta property="og:image" content="{{ url_for('static', filename='favicon.png', _external=True) }}">
+  <meta name="twitter:card" content="summary_large_image">
   <link
     href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500;700&display=swap"
     rel="stylesheet">
