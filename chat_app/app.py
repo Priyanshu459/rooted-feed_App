@@ -979,54 +979,115 @@ def ai_chat():
 @app.route('/api/mutual_followers')
 @login_required
 def get_mutual_followers():
-    followed = current_user.followed.all()
-    followers = current_user.followers.all()
-    mutuals = [u for u in followed if u in followers]
-    return jsonify([{'id': u.id, 'name': u.display_name, 'handle': u.handle, 'photo': u.profile_photo_url} for u in mutuals])
+    try:
+        followed = current_user.followed.all()
+        followers_list = current_user.followers.all()
+        mutuals = [u for u in followed if u in followers_list]
+        return jsonify([{'id': u.id, 'name': u.display_name, 'handle': u.handle, 'photo': u.profile_photo_url} for u in mutuals])
+    except Exception as e:
+        print(f'[Flora] mutual_followers error: {e}')
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/flora/debug')
+@login_required
+def debug_flora():
+    """Debug endpoint to diagnose Flora issues live."""
+    try:
+        from sqlalchemy import text, inspect
+        inspector = inspect(db.engine)
+        tables = inspector.get_table_names()
+        user_cols = [c['name'] for c in inspector.get_columns('user')]
+        flora_tables = [t for t in tables if 'flora' in t]
+        
+        flora_count = 0
+        flora_member_count = 0
+        if 'flora' in tables:
+            flora_count = Flora.query.count()
+        if 'flora_members' in tables:
+            with db.engine.connect() as conn:
+                flora_member_count = conn.execute(text('SELECT COUNT(*) FROM flora_members')).scalar()
+        
+        user_flora_count = 0
+        try:
+            user_flora_count = current_user.floras.count()
+        except Exception as ue:
+            user_flora_count = f'error: {ue}'
+
+        return jsonify({
+            'status': 'ok',
+            'db_dialect': db.engine.dialect.name,
+            'tables': tables,
+            'flora_related_tables': flora_tables,
+            'user_columns': user_cols,
+            'has_cover_photo_url': 'cover_photo_url' in user_cols,
+            'total_floras': flora_count,
+            'total_flora_members': flora_member_count,
+            'current_user_id': current_user.id,
+            'current_user_handle': current_user.handle,
+            'current_user_flora_count': user_flora_count
+        })
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @app.route('/api/flora', methods=['POST'])
 @login_required
 def create_flora():
-    data = request.json
-    name = data.get('name')
-    description = data.get('description', '')
-    member_ids = data.get('members', [])
-    
-    if not name:
-        return jsonify({'error': 'Name is required'}), 400
+    try:
+        data = request.json
+        name = data.get('name')
+        description = data.get('description', '')
+        member_ids = data.get('members', [])
         
-    ts = int(time.time() * 1000)
-    flora = Flora(name=name, description=description, creator_id=current_user.id, created_at=ts)
-    db.session.add(flora)
-    
-    flora.members.append(current_user)
-    followed_list = current_user.followed.all()
-    followers_list = current_user.followers.all()
-    
-    for m_id in member_ids:
-        user = User.query.get(m_id)
-        if user and user in followed_list and user in followers_list:
-            flora.members.append(user)
+        if not name:
+            return jsonify({'error': 'Name is required'}), 400
             
-    db.session.commit()
-    return jsonify({'success': True, 'id': flora.id, 'name': flora.name})
+        ts = int(time.time() * 1000)
+        flora = Flora(name=name, description=description, creator_id=current_user.id, created_at=ts)
+        db.session.add(flora)
+        db.session.flush()  # ensure flora.id is set before appending members
+        
+        flora.members.append(current_user)
+        followed_list = current_user.followed.all()
+        followers_list = current_user.followers.all()
+        
+        for m_id in member_ids:
+            try:
+                m_id_int = int(m_id)
+            except (ValueError, TypeError):
+                continue
+            user = User.query.get(m_id_int)
+            if user and user in followed_list and user in followers_list:
+                flora.members.append(user)
+                
+        db.session.commit()
+        print(f'[Flora] Created flora "{name}" for {current_user.handle}')
+        return jsonify({'success': True, 'id': flora.id, 'name': flora.name})
+    except Exception as e:
+        db.session.rollback()
+        print(f'[Flora] create_flora error: {e}')
+        return jsonify({'error': str(e), 'success': False}), 500
 
 @app.route('/api/my_floras')
 @login_required
 def get_my_floras():
-    floras = current_user.floras.order_by(Flora.created_at.desc()).all()
-    res = []
-    for f in floras:
-        members = [{'id': u.id, 'name': u.display_name, 'handle': u.handle, 'photo': u.profile_photo_url} for u in f.members]
-        res.append({
-            'id': f.id,
-            'name': f.name,
-            'description': f.description,
-            'created_at': f.created_at,
-            'members': members,
-            'creator_id': f.creator_id
-        })
-    return jsonify(res)
+    try:
+        floras = current_user.floras.order_by(Flora.created_at.desc()).all()
+        res = []
+        for f in floras:
+            members_list = f.members.all()  # explicitly call .all() on dynamic relationship
+            members = [{'id': u.id, 'name': u.display_name, 'handle': u.handle, 'photo': u.profile_photo_url} for u in members_list]
+            res.append({
+                'id': f.id,
+                'name': f.name,
+                'description': f.description,
+                'created_at': f.created_at,
+                'members': members,
+                'creator_id': f.creator_id
+            })
+        return jsonify(res)
+    except Exception as e:
+        print(f'[Flora] get_my_floras error: {e}')
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3001))

@@ -3321,6 +3321,7 @@
 
     // --- FLORA FUNCTIONS ---
     function openFloraModal() {
+      console.log('[Flora] openFloraModal called');
       document.getElementById('createFloraModal').style.display = 'flex';
       document.getElementById('floraNameInput').value = '';
       document.getElementById('floraDescInput').value = '';
@@ -3328,11 +3329,19 @@
       list.innerHTML = '<div style="color:var(--stone); font-size:14px;">Loading mutuals...</div>';
       
       fetch(`/api/mutual_followers?t=${Date.now()}`)
-        .then(r => r.json())
+        .then(r => {
+          console.log('[Flora] mutual_followers status:', r.status);
+          return r.json();
+        })
         .then(mutuals => {
+          console.log('[Flora] mutuals received:', mutuals);
           list.innerHTML = '';
+          if (!Array.isArray(mutuals)) {
+            list.innerHTML = `<div style="color:red; font-size:13px;">Error loading mutuals: ${JSON.stringify(mutuals)}</div>`;
+            return;
+          }
           if (mutuals.length === 0) {
-            list.innerHTML = '<div style="color:var(--stone); font-size:14px;">You need mutual followers to create a Flora.</div>';
+            list.innerHTML = '<div style="color:var(--stone); font-size:14px;">No mutual followers yet. Follow people and have them follow you back!</div>';
           }
           mutuals.forEach(m => {
             const row = document.createElement('label');
@@ -3349,6 +3358,10 @@
             `;
             list.appendChild(row);
           });
+        })
+        .catch(err => {
+          console.error('[Flora] mutual_followers fetch error:', err);
+          list.innerHTML = `<div style="color:red;">Network error: ${err.message}</div>`;
         });
     }
 
@@ -3387,21 +3400,29 @@
       
       const cbs = document.querySelectorAll('.flora-member-cb:checked');
       const members = Array.from(cbs).map(cb => cb.value);
+      console.log('[Flora] submitting:', { name, desc, members });
       
       fetch('/api/flora', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ name: name, description: desc, members: members })
-      }).then(r => r.json()).then(data => {
+      })
+      .then(r => {
+        console.log('[Flora] create response status:', r.status);
+        return r.json();
+      })
+      .then(data => {
+        console.log('[Flora] create response data:', data);
         if (data.success) {
           closeFloraModal();
           showNotif(`Flora '${data.name}' created! 🌿`);
-          openMessages(); 
+          openMessages();
         } else {
-          showNotif('Failed to create Flora', 'error');
+          showNotif(`Failed: ${data.error || 'Unknown error'}`, 'error');
         }
       }).catch(err => {
-        showNotif('Server error while creating Flora', 'error');
+        console.error('[Flora] create fetch error:', err);
+        showNotif('Network error while creating Flora', 'error');
       });
     }
   </script>
