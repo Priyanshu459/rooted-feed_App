@@ -211,6 +211,18 @@ with app.app_context():
                 conn.execute(text('ALTER TABLE conversation ALTER COLUMN updated_at TYPE BIGINT'))
             except Exception as e:
                 print("Migration note:", e)
+                
+            # Performance Optimization: Create Indexes for fast querying
+            try:
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_timestamp ON post (timestamp DESC)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_node ON post (node)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_parent_id ON post (parent_id)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_handle ON post (handle)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_notification_user_id ON notification (user_id)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_notification_timestamp ON notification (timestamp DESC)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_message_conv_id ON message (conversation_id)'))
+            except Exception as e:
+                print("Index creation note:", e)
 
 # Enable SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=500*1024*1024, async_mode='eventlet')
