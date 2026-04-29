@@ -147,6 +147,30 @@ class Message(db.Model):
     timestamp = db.Column(db.BigInteger)
     read = db.Column(db.Boolean, default=False)
 
+chat_group_members = db.Table('chat_group_members',
+    db.Column('group_id', db.String(36), db.ForeignKey('chat_group.id')),
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
+)
+
+class ChatGroup(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(100), nullable=False)
+    admin_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    updated_at = db.Column(db.BigInteger)
+    
+    admin = db.relationship('User', foreign_keys=[admin_id])
+    members = db.relationship('User', secondary=chat_group_members, backref=db.backref('chat_groups', lazy='dynamic'), lazy='dynamic')
+    messages = db.relationship('GroupMessage', backref='group', lazy='dynamic', cascade='all, delete-orphan')
+
+class GroupMessage(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    group_id = db.Column(db.String(36), db.ForeignKey('chat_group.id'))
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    text = db.Column(db.String(1000))
+    timestamp = db.Column(db.BigInteger)
+    
+    sender = db.relationship('User', foreign_keys=[sender_id])
+
 class Notification(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Owner
@@ -514,6 +538,12 @@ def follow_user(handle):
         db.session.commit()
         return jsonify({'success': True, 'status': 'following'})
 
+@app.route('/api/following')
+@login_required
+def get_following():
+    following = [{'handle': u.handle, 'name': u.display_name} for u in current_user.followed.all()]
+    return jsonify(following)
+
 @app.route('/api/unfollow/<handle>', methods=['POST'])
 @login_required
 def unfollow_user(handle):
@@ -591,11 +621,28 @@ def get_conversations():
         if last_msg:
             res.append({
                 'id': c.id,
+                'is_group': False,
                 'other_user': {'handle': other_user.handle, 'name': other_user.display_name, 'photo': other_user.profile_photo_url},
                 'last_message': last_msg.text,
                 'timestamp': last_msg.timestamp,
                 'unread_count': unread_count
             })
+            
+    # Also fetch groups
+    groups = current_user.chat_groups.all()
+    for g in groups:
+        last_msg = g.messages.order_by(GroupMessage.timestamp.desc()).first()
+        res.append({
+            'id': g.id,
+            'is_group': True,
+            'other_user': {'handle': 'group_' + g.id, 'name': g.name, 'photo': None},
+            'group_id': g.id,
+            'last_message': last_msg.text if last_msg else '',
+            'timestamp': last_msg.timestamp if last_msg else g.updated_at,
+            'unread_count': 0
+        })
+        
+    res.sort(key=lambda x: x['timestamp'] or 0, reverse=True)
     return jsonify(res)
 
 @app.route('/api/messages/<handle>')
@@ -617,6 +664,96 @@ def get_messages(handle):
     return jsonify([{
         'id': m.id, 'sender_id': m.sender_id, 'text': m.text, 'timestamp': m.timestamp, 'is_me': m.sender_id == current_user.id
     } for m in messages])
+
+@app.route('/api/group_messages/<group_id>')
+@login_required
+def get_group_messages(group_id):
+    group = ChatGroup.query.get(group_id)
+    if not group or current_user not in group.members:
+        return jsonify([])
+        
+    messages = group.messages.order_by(GroupMessage.timestamp.asc()).all()
+    return jsonify([{
+        'id': m.id, 'sender_id': m.sender_id, 'sender_name': m.sender.display_name if m.sender else 'Unknown', 'text': m.text, 'timestamp': m.timestamp, 'is_me': m.sender_id == current_user.id
+    } for m in messages])
+
+@app.route('/api/groups', methods=['POST'])
+@login_required
+def create_group():
+    data = request.json
+    name = data.get('name')
+    member_handles = data.get('member_handles', [])
+    
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+        
+    group = ChatGroup(name=name, admin_id=current_user.id, updated_at=int(time.time() * 1000))
+    group.members.append(current_user)
+    
+    for handle in member_handles:
+        user = User.query.filter_by(handle=handle).first()
+        if user and user != current_user:
+            if current_user.is_following(user):
+                group.members.append(user)
+                
+    db.session.add(group)
+    db.session.commit()
+    
+    for member in group.members:
+        socketio.emit('group_added', {}, room=f"user_{member.id}")
+        
+    return jsonify({'success': True, 'group_id': group.id})
+
+@app.route('/api/groups/<group_id>', methods=['PATCH'])
+@login_required
+def edit_group(group_id):
+    group = ChatGroup.query.get(group_id)
+    if not group or group.admin_id != current_user.id:
+        return jsonify({'error': 'Unauthorized or not found'}), 403
+        
+    data = request.json
+    if 'name' in data:
+        group.name = data['name']
+        
+    if 'member_handles' in data:
+        new_members = [current_user]
+        for handle in data['member_handles']:
+            user = User.query.filter_by(handle=handle).first()
+            if user and user != current_user and current_user.is_following(user):
+                new_members.append(user)
+        group.members = new_members
+        
+    db.session.commit()
+    for member in group.members:
+        socketio.emit('group_added', {}, room=f"user_{member.id}")
+        
+    return jsonify({'success': True})
+    
+@app.route('/api/groups/<group_id>', methods=['DELETE'])
+@login_required
+def delete_group_api(group_id):
+    group = ChatGroup.query.get(group_id)
+    if not group or group.admin_id != current_user.id:
+        return jsonify({'error': 'Unauthorized or not found'}), 403
+        
+    db.session.delete(group)
+    db.session.commit()
+    return jsonify({'success': True})
+
+@app.route('/api/groups/<group_id>/members')
+@login_required
+def get_group_members(group_id):
+    group = ChatGroup.query.get(group_id)
+    if not group or current_user not in group.members:
+        return jsonify({'error': 'Unauthorized'}), 403
+    members = [{'handle': m.handle, 'name': m.display_name, 'photo': m.profile_photo_url} for m in group.members if m != current_user]
+    # Also fetch people you follow so you can add them
+    following = [{'handle': u.handle, 'name': u.display_name} for u in current_user.followed.all()]
+    return jsonify({
+        'admin_id': group.admin_id,
+        'members': members,
+        'following': following
+    })
 
 from flask_socketio import join_room
 
@@ -667,6 +804,30 @@ def send_dm(data):
     }
     emit('receive_message', payload, room=f"user_{current_user.id}")
     emit('receive_message', payload, room=f"user_{target_user.id}")
+
+@socketio.on('send_group_message')
+def send_group_message(data):
+    if not current_user.is_authenticated: return
+    group_id = data.get('group_id')
+    text = data.get('text')
+    if not group_id or not text: return
+    
+    group = ChatGroup.query.get(group_id)
+    if not group or current_user not in group.members: return
+    
+    ts = int(time.time() * 1000)
+    msg = GroupMessage(group_id=group.id, sender_id=current_user.id, text=text, timestamp=ts)
+    group.updated_at = ts
+    db.session.add(msg)
+    db.session.commit()
+    
+    payload = {
+        'id': msg.id, 'text': text, 'timestamp': ts, 'group_id': group.id,
+        'sender_handle': current_user.handle, 'sender_name': current_user.display_name, 'sender_photo': current_user.profile_photo_url
+    }
+    
+    for member in group.members:
+        emit('receive_group_message', payload, room=f"user_{member.id}")
 
 @socketio.on('typing')
 def handle_typing(data):

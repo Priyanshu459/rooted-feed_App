@@ -1329,6 +1329,56 @@
       animation: floatUp 0.25s ease-out;
     }
 
+    /* GROUP MODAL STYLES */
+    #groupModal {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .group-modal-card {
+      background: #fff;
+      border-radius: 28px;
+      padding: 32px;
+      width: min(440px, 92vw);
+      box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+      animation: floatUp 0.25s ease-out;
+      border: 1px solid rgba(139, 94, 60, 0.1);
+    }
+    .group-member-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      transition: background 0.2s;
+      cursor: pointer;
+      user-select: none;
+    }
+    .group-member-item:hover {
+      background: rgba(139, 94, 60, 0.05);
+    }
+    .group-member-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--green3);
+      cursor: pointer;
+    }
+    .member-list-container {
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid rgba(139, 94, 60, 0.15);
+      border-radius: 16px;
+      padding: 8px;
+      background: rgba(139, 94, 60, 0.02);
+      margin-top: 8px;
+    }
+    .member-list-container::-webkit-scrollbar {
+      width: 6px;
+    }
+    .member-list-container::-webkit-scrollbar-thumb {
+      background: rgba(139, 94, 60, 0.15);
+      border-radius: 10px;
+    }
+
     /* MOBILE RESPONSIVENESS */
     @media (max-width: 768px) {
       .right-sidebar {
@@ -1741,7 +1791,10 @@
     <div class="main-feed" id="messagesView" style="display:none; flex-direction:column; background:#fff;">
       <div class="feed-header" style="display:flex; justify-content:space-between; align-items:center;">
         <h2 style="font-size:20px; font-weight:700;">Messages</h2>
-        <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:24px;">✕</div>
+        <div style="display:flex; gap:12px; align-items:center;">
+          <button class="btn-primary" style="padding:6px 12px; font-size:14px; border-radius:16px;" onclick="openCreateGroupModal()">+ Group</button>
+          <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:24px;">✕</div>
+        </div>
       </div>
       <div id="convList" style="flex:1; overflow-y:auto; padding:0;">
         <!-- conversations load here -->
@@ -2840,9 +2893,14 @@
               totalUnread += c.unread_count;
               const item = document.createElement('div');
               item.className = 'conv-item';
-              item.onclick = () => openChat(c.other_user.handle, c.other_user.name, c.other_user.photo);
+              item.onclick = () => openChat(c.other_user.handle, c.other_user.name, c.other_user.photo, c.is_group, c.group_id);
 
-              let photoHtml = c.other_user.photo ? `<img src="${c.other_user.photo}" class="mini-avatar" style="object-fit:cover;">` : `<div class="mini-avatar">${c.other_user.name[0].toUpperCase()}</div>`;
+              let photoHtml = '';
+              if (c.is_group) {
+                photoHtml = `<div class="mini-avatar" style="background:linear-gradient(135deg,var(--green3),var(--moss));color:white;">👥</div>`;
+              } else {
+                photoHtml = c.other_user.photo ? `<img src="${c.other_user.photo}" class="mini-avatar" style="object-fit:cover;">` : `<div class="mini-avatar">${c.other_user.name[0].toUpperCase()}</div>`;
+              }
               let unreadHtml = c.unread_count > 0 ? `<div class="unread-badge" style="position:static;">${c.unread_count}</div>` : '';
 
               const d = new Date(c.timestamp);
@@ -2871,12 +2929,26 @@
         });
     }
 
-    function openChat(handle, name, photoUrl) {
-      currentChatTarget = handle;
+    let currentChatTargetIsGroup = false;
+
+    function openChat(handle, name, photoUrl, is_group = false, group_id = null) {
+      currentChatTarget = is_group ? group_id : handle;
+      currentChatTargetIsGroup = is_group;
       switchTab('chatView');
 
-      document.getElementById('chatName').textContent = name;
-      if (photoUrl) {
+      if (is_group) {
+        document.getElementById('chatName').innerHTML = `${name} <span onclick="openEditGroupModal('${group_id}')" style="font-size:14px;color:var(--stone);cursor:pointer;margin-left:8px;font-weight:normal;">⚙️ Edit</span>`;
+      } else {
+        document.getElementById('chatName').textContent = name;
+      }
+      
+      if (is_group) {
+        document.getElementById('chatAvatar').style.display = 'none';
+        document.getElementById('chatAvatarText').innerHTML = '👥';
+        document.getElementById('chatAvatarText').style.display = 'flex';
+        document.getElementById('chatAvatarText').style.background = 'linear-gradient(135deg,var(--green3),var(--moss))';
+        document.getElementById('chatAvatarText').style.color = 'white';
+      } else if (photoUrl) {
         document.getElementById('chatAvatar').src = photoUrl;
         document.getElementById('chatAvatar').style.display = 'flex';
         document.getElementById('chatAvatarText').style.display = 'none';
@@ -2884,36 +2956,51 @@
         document.getElementById('chatAvatar').style.display = 'none';
         document.getElementById('chatAvatarText').textContent = name[0].toUpperCase();
         document.getElementById('chatAvatarText').style.display = 'flex';
+        document.getElementById('chatAvatarText').style.background = 'var(--earth4)';
       }
 
-      fetchMessages(handle);
+      fetchMessages(currentChatTarget, is_group);
     }
 
-    function fetchMessages(handle) {
-      fetch(`/api/messages/${handle}`)
+    function fetchMessages(target, is_group) {
+      const endpoint = is_group ? `/api/group_messages/${target}` : `/api/messages/${target}`;
+      fetch(endpoint)
         .then(r => r.json())
         .then(msgs => {
           const area = document.getElementById('chatMessages');
           area.innerHTML = '';
-          msgs.forEach(m => appendChatMessage(m));
+          msgs.forEach(m => appendChatMessage(m, is_group));
           area.scrollTop = area.scrollHeight;
           fetchConversations(); // clear unread counts
         });
     }
 
-    function appendChatMessage(m) {
+    function appendChatMessage(m, is_group) {
       const area = document.getElementById('chatMessages');
+      const wrap = document.createElement('div');
+      wrap.style.display = 'flex';
+      wrap.style.flexDirection = 'column';
+      wrap.style.alignItems = m.is_me ? 'flex-end' : 'flex-start';
+      
+      if (is_group && !m.is_me) {
+        const senderLabel = document.createElement('div');
+        senderLabel.style.cssText = 'font-size:12px; color:var(--stone); margin-bottom:2px; margin-left:12px;';
+        senderLabel.textContent = m.sender_name;
+        wrap.appendChild(senderLabel);
+      }
+      
       const b = document.createElement('div');
       b.className = `chat-bubble ${m.is_me ? 'me' : 'them'}`;
       b.textContent = m.text;
-      if (m.is_me) {
+      if (m.is_me && !is_group) {
         const tick = document.createElement('span');
         tick.style.cssText = 'font-size:11px; opacity:0.75; margin-left:6px;';
         tick.textContent = m.read ? ' ✓✓' : ' ✓';
         tick.id = `tick-${m.id || ''}`;
         b.appendChild(tick);
       }
-      area.appendChild(b);
+      wrap.appendChild(b);
+      area.appendChild(wrap);
     }
 
     // Typing indicator
@@ -2944,7 +3031,11 @@
       const text = input.value.trim();
       if (!text || !currentChatTarget) return;
 
-      socket.emit('send_message', { target_handle: currentChatTarget, text: text });
+      if (currentChatTargetIsGroup) {
+        socket.emit('send_group_message', { group_id: currentChatTarget, text: text });
+      } else {
+        socket.emit('send_message', { target_handle: currentChatTarget, text: text });
+      }
       input.value = '';
     }
 
@@ -2957,8 +3048,8 @@
     // Socket handler for DMs
     socket.on('receive_message', function (msg) {
       const isMe = msg.sender_id === currentUser.id;
-      if (currentChatTarget && ((isMe && msg.target_handle === currentChatTarget) || (!isMe && msg.sender_handle === currentChatTarget))) {
-        appendChatMessage({ text: msg.text, is_me: isMe });
+      if (!currentChatTargetIsGroup && currentChatTarget && ((isMe && msg.target_handle === currentChatTarget) || (!isMe && msg.sender_handle === currentChatTarget))) {
+        appendChatMessage({ text: msg.text, is_me: isMe }, false);
         const area = document.getElementById('chatMessages');
         area.scrollTop = area.scrollHeight;
         if (!isMe) fetch(`/api/messages/${msg.sender_handle}`); // Mark read implicitly
@@ -2966,6 +3057,22 @@
         fetchConversations(); // update badge
         if (!isMe) showNotif(`New message from ${msg.sender_name}`);
       }
+    });
+
+    socket.on('receive_group_message', function (msg) {
+      const isMe = msg.sender_handle === currentUser.handle;
+      if (currentChatTargetIsGroup && currentChatTarget === msg.group_id) {
+        appendChatMessage({ text: msg.text, is_me: isMe, sender_name: msg.sender_name }, true);
+        const area = document.getElementById('chatMessages');
+        area.scrollTop = area.scrollHeight;
+      } else {
+        fetchConversations();
+        if (!isMe) showNotif(`New message in group`);
+      }
+    });
+    
+    socket.on('group_added', function () {
+      fetchConversations();
     });
 
     socket.on('message_error', function (err) {
@@ -3291,6 +3398,189 @@
       </div>
     </div>
   </div>
+
+  <!-- GROUP MODAL -->
+  <div id="groupModal" onclick="if(event.target===this) closeGroupModal()"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:400; align-items:center; justify-content:center;">
+    <div class="group-modal-card">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:24px;">
+        <div>
+          <h2 id="groupModalTitle" style="margin:0; font-size:22px; font-weight:700; color:var(--earth1);">Create Group</h2>
+          <div id="groupModalSub" style="font-size:14px; color:var(--stone); margin-top:4px;">Gather your community.</div>
+        </div>
+        <div onclick="closeGroupModal()" style="cursor:pointer; color:var(--stone); font-size:20px; width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:rgba(139,94,60,0.05);">✕</div>
+      </div>
+      
+      <input type="hidden" id="editGroupId" value="">
+      
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-size:13px; font-weight:700; color:var(--stone); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Group Name</label>
+        <input type="text" id="groupNameInput" placeholder="e.g. Hiking Enthusiasts 🌲" class="text-input"
+          style="background:rgba(139,94,60,0.03);">
+      </div>
+      
+      <div style="margin-bottom:28px;">
+        <label style="display:block; font-size:13px; font-weight:700; color:var(--stone); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px;">Select Members</label>
+        <div id="groupMembersList" class="member-list-container">
+          <!-- list of people -->
+        </div>
+      </div>
+      
+      <div style="display:flex; gap:12px; justify-content:space-between; align-items:center;">
+        <button id="deleteGroupBtn" style="display:none; padding:10px 16px; color:var(--terracotta); background:none; border:none; cursor:pointer; font-size:14px; font-weight:600;" onclick="deleteGroup()">Delete Group</button>
+        <div style="display:flex; gap:12px; margin-left:auto;">
+          <button onclick="closeGroupModal()"
+            style="padding:10px 24px; border-radius:20px; border:1px solid rgba(139,94,60,0.2); background:none; cursor:pointer; font-family:inherit; font-size:15px; color:var(--stone); font-weight:500;">Cancel</button>
+          <button class="btn-primary" onclick="saveGroup()" style="padding:10px 28px;">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function openCreateGroupModal() {
+      document.getElementById('groupModalTitle').textContent = 'Create Group';
+      document.getElementById('groupModalSub').textContent = 'Gather your community.';
+      document.getElementById('editGroupId').value = '';
+      document.getElementById('groupNameInput').value = '';
+      document.getElementById('deleteGroupBtn').style.display = 'none';
+      document.getElementById('groupModal').style.display = 'flex';
+      
+      fetch('/api/following').then(r=>r.json()).then(following => {
+        populateGroupMembers(following, []);
+      });
+    }
+
+    function openEditGroupModal(groupId) {
+      document.getElementById('groupModalTitle').textContent = 'Edit Group';
+      document.getElementById('groupModalSub').textContent = 'Manage members and name.';
+      document.getElementById('editGroupId').value = groupId;
+      document.getElementById('groupModal').style.display = 'flex';
+      
+      fetch('/api/groups/' + groupId + '/members').then(r=>r.json()).then(data => {
+        if(data.error) { showNotif(data.error); closeGroupModal(); return; }
+        
+        const chatNameEl = document.getElementById('chatName');
+        const nameOnly = chatNameEl.textContent.split('⚙️')[0].trim();
+        document.getElementById('groupNameInput').value = nameOnly;
+        
+        // Show delete button only if current user is admin
+        if (data.admin_id === currentUser.id) {
+          document.getElementById('deleteGroupBtn').style.display = 'block';
+        } else {
+          document.getElementById('deleteGroupBtn').style.display = 'none';
+        }
+        
+        const selectedHandles = data.members.map(m => m.handle);
+        populateGroupMembers(data.following, selectedHandles);
+      });
+    }
+
+    function populateGroupMembers(following, selectedHandles) {
+      const list = document.getElementById('groupMembersList');
+      list.innerHTML = '';
+      if (following.length === 0) {
+        list.innerHTML = '<div style="padding:20px; color:var(--stone); font-size:14px; text-align:center;">You are not following anyone yet.</div>';
+        return;
+      }
+      
+      following.forEach(u => {
+        const item = document.createElement('label');
+        item.className = 'group-member-item';
+        
+        const isChecked = selectedHandles.includes(u.handle);
+        item.innerHTML = `
+          <input type="checkbox" value="${u.handle}" class="group-member-cb" ${isChecked ? 'checked' : ''}>
+          <div style="flex:1;">
+            <div style="font-size:15px; font-weight:600; color:var(--earth1);">${u.name}</div>
+            <div style="font-size:13px; color:var(--stone);">${u.handle}</div>
+          </div>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function deleteGroup() {
+      const groupId = document.getElementById('editGroupId').value;
+      if (!groupId) return;
+      
+      showConfirm('Delete this group permanently?', () => {
+        fetch('/api/groups/' + groupId, { method: 'DELETE' })
+          .then(r => r.json())
+          .then(data => {
+            if (data.success) {
+              showNotif('Group deleted');
+              closeGroupModal();
+              switchTab('messagesView');
+              fetchConversations();
+            } else {
+              showNotif(data.error || 'Delete failed');
+            }
+          });
+      });
+    }
+
+    function closeGroupModal() {
+      document.getElementById('groupModal').style.display = 'none';
+    }
+
+    function saveGroup() {
+      const name = document.getElementById('groupNameInput').value.trim();
+      const groupId = document.getElementById('editGroupId').value;
+      if (!name) { showNotif('Group name required'); return; }
+      
+      const cbs = document.querySelectorAll('.group-member-cb:checked');
+      const handles = Array.from(cbs).map(c => c.value);
+      
+      const btn = event.target;
+      const oldText = btn.textContent;
+      btn.textContent = 'Saving...';
+      btn.disabled = true;
+      
+      if (groupId) {
+        // Edit
+        fetch('/api/groups/' + groupId, {
+          method: 'PATCH',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name: name, member_handles: handles})
+        }).then(r=>r.json()).then(d => {
+          btn.textContent = oldText;
+          btn.disabled = false;
+          if (d.success) {
+            showNotif('Group updated');
+            closeGroupModal();
+            openChat(currentChatTarget, name, null, true, groupId); // refresh
+          } else {
+            showNotif(d.error || 'Update failed');
+          }
+        }).catch(() => {
+          btn.textContent = oldText;
+          btn.disabled = false;
+        });
+      } else {
+        // Create
+        fetch('/api/groups', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({name: name, member_handles: handles})
+        }).then(r=>r.json()).then(d => {
+          btn.textContent = oldText;
+          btn.disabled = false;
+          if (d.success) {
+            showNotif('Group created! 🌿');
+            closeGroupModal();
+            fetchConversations();
+            openChat(d.group_id, name, null, true, d.group_id);
+          } else {
+            showNotif(d.error || 'Creation failed');
+          }
+        }).catch(() => {
+          btn.textContent = oldText;
+          btn.disabled = false;
+        });
+      }
+    }
+  </script>
 
   <!-- PWA Service Worker Registration -->
   <script>
