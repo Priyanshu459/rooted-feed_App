@@ -3451,23 +3451,29 @@
   </div>
 
   <!-- CREATE FLORA MODAL -->
-  <div id="createFloraModal" onclick="if(event.target===this) closeFloraModal()"
-    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:500; align-items:center; justify-content:center; padding:16px;">
-    <div style="background:#fff; border-radius:24px; padding:28px; width:min(420px,100%); max-height:90vh; overflow-y:auto; box-shadow:0 24px 64px rgba(0,0,0,0.2);">
-      <h2 style="font-family:'Playfair Display',serif; font-size:22px; color:var(--earth1); margin-bottom:20px;">&#127807; Create a Flora</h2>
-      <input type="text" id="floraNameInput" placeholder="Flora Name *" style="width:100%; padding:14px; border-radius:12px; border:1.5px solid rgba(139,94,60,0.25); outline:none; font-size:15px; margin-bottom:14px; font-family:inherit; box-sizing:border-box;">
-      <textarea id="floraDescInput" placeholder="Description (optional)" style="width:100%; padding:14px; border-radius:12px; border:1.5px solid rgba(139,94,60,0.25); outline:none; font-size:15px; resize:vertical; min-height:70px; margin-bottom:14px; font-family:inherit; box-sizing:border-box;"></textarea>
+  <div id="createFloraModal"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:500; align-items:flex-start; justify-content:center; padding:24px 16px; overflow-y:auto;"
+    onclick="closeFloraModal()">
+    <div style="background:#fff; border-radius:24px; padding:28px; width:min(420px,100%); box-shadow:0 24px 64px rgba(0,0,0,0.2); margin:auto; position:relative;"
+      onclick="event.stopPropagation()">
+      <button onclick="closeFloraModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--stone); line-height:1;">&times;</button>
+      <h2 style="font-family:'Playfair Display',serif; font-size:22px; color:var(--earth1); margin-bottom:20px; padding-right:32px;">&#127807; Create a Flora</h2>
+      <input type="text" id="floraNameInput" placeholder="Flora Name *"
+        style="width:100%; padding:14px; border-radius:12px; border:1.5px solid rgba(139,94,60,0.25); outline:none; font-size:16px; margin-bottom:14px; font-family:inherit; box-sizing:border-box; -webkit-appearance:none;"
+        autocomplete="off">
+      <textarea id="floraDescInput" placeholder="Description (optional)"
+        style="width:100%; padding:14px; border-radius:12px; border:1.5px solid rgba(139,94,60,0.25); outline:none; font-size:16px; resize:vertical; min-height:70px; margin-bottom:14px; font-family:inherit; box-sizing:border-box; -webkit-appearance:none;"></textarea>
       
       <div style="margin-bottom:20px;">
         <label style="font-size:13px; font-weight:700; color:var(--stone); text-transform:uppercase; letter-spacing:0.5px;">Select Members (Mutuals Only)</label>
-        <div id="floraMembersList" style="max-height:150px; overflow-y:auto; margin-top:10px; display:flex; flex-direction:column; gap:6px; border:1px solid rgba(139,94,60,0.1); border-radius:12px; padding:8px;">
+        <div id="floraMembersList" style="max-height:180px; overflow-y:auto; margin-top:10px; display:flex; flex-direction:column; gap:6px; border:1px solid rgba(139,94,60,0.1); border-radius:12px; padding:8px;">
           <!-- mutuals populate here -->
         </div>
       </div>
       
       <div style="display:flex; gap:12px;">
-        <button onclick="closeFloraModal()" style="flex:1; padding:13px; border-radius:20px; border:1px solid rgba(139,94,60,0.2); background:none; cursor:pointer; font-family:inherit; font-size:15px; color:var(--stone);">Cancel</button>
-        <button class="btn-primary" onclick="submitCreateFlora()" style="flex:2; padding:13px; font-size:15px; font-weight:700;">&#10003; Create Flora</button>
+        <button onclick="closeFloraModal()" style="flex:1; padding:14px; border-radius:20px; border:1px solid rgba(139,94,60,0.2); background:none; cursor:pointer; font-family:inherit; font-size:15px; color:var(--stone);">Cancel</button>
+        <button class="btn-primary" onclick="submitCreateFlora()" style="flex:2; padding:14px; font-size:15px; font-weight:700;">&#10003; Create Flora</button>
       </div>
     </div>
   </div>
