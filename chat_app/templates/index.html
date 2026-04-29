@@ -2948,6 +2948,12 @@
       if (!text || !currentChatTarget) return;
 
       socket.emit('send_message', { target_handle: currentChatTarget, text: text });
+      
+      // OPTIMISTIC UI UPDATE
+      appendChatMessage({ text: text, is_me: true });
+      const area = document.getElementById('chatMessages');
+      area.scrollTop = area.scrollHeight;
+
       input.value = '';
     }
 
@@ -2959,15 +2965,19 @@
 
     // Socket handler for DMs
     socket.on('receive_message', function (msg) {
-      const isMe = msg.sender_id === currentUser.id;
-      if (currentChatTarget && ((isMe && msg.target_handle === currentChatTarget) || (!isMe && msg.sender_handle === currentChatTarget))) {
-        appendChatMessage({ text: msg.text, is_me: isMe });
+      const isMe = msg.sender_handle === currentUser.handle;
+      
+      // Ignore our own messages since we optimistically append them in sendDM
+      if (isMe) return;
+
+      if (currentChatTarget && msg.sender_handle === currentChatTarget) {
+        appendChatMessage({ text: msg.text, is_me: false });
         const area = document.getElementById('chatMessages');
         area.scrollTop = area.scrollHeight;
-        if (!isMe) fetch(`/api/messages/${msg.sender_handle}`); // Mark read implicitly
+        fetch(`/api/messages/${msg.sender_handle}`); // Mark read implicitly
       } else {
         fetchConversations(); // update badge
-        if (!isMe) showNotif(`New message from ${msg.sender_name}`);
+        showNotif(`New message from ${msg.sender_name}`);
       }
     });
 
