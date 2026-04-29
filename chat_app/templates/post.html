@@ -21,6 +21,24 @@
   <meta property="og:image:height" content="630">
   {% endif %}
 
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SocialMediaPosting",
+    "headline": "{{ og_title }}",
+    "description": "{{ og_description }}",
+    "datePublished": "{{ post.timestamp }}",
+    "author": {
+      "@type": "Person",
+      "name": "{{ post.sender }}",
+      "alternateName": "{{ post.handle }}"
+    },
+    "image": "{{ og_image }}",
+    "url": "{{ og_url }}"
+  }
+  </script>
+
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{ og_title }}">

@@ -274,14 +274,23 @@ def robots():
 
 @app.route('/sitemap.xml')
 def sitemap():
-    xml = """<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>https://www.rooted-feed.online/</loc>
-    <changefreq>daily</changefreq>
-    <priority>1.0</priority>
-  </url>
-</urlset>"""
+    # Base URL for the site
+    base_url = "https://www.rooted-feed.online"
+    
+    # Query all public posts (not comments, maybe limit to top 500 for performance)
+    posts = Post.query.filter(Post.parent_id == None).order_by(Post.timestamp.desc()).limit(500).all()
+    
+    xml = '<?xml version="1.0" encoding="UTF-8"?>\n'
+    xml += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+    
+    # Homepage
+    xml += f'  <url>\n    <loc>{base_url}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n'
+    
+    # Post pages
+    for post in posts:
+        xml += f'  <url>\n    <loc>{base_url}/post/{post.id}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n'
+        
+    xml += '</urlset>'
     return xml, 200, {'Content-Type': 'application/xml'}
 
 @app.route('/post/<post_id>')
