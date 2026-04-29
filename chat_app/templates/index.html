@@ -1741,7 +1741,10 @@
     <div class="main-feed" id="messagesView" style="display:none; flex-direction:column; background:#fff;">
       <div class="feed-header" style="display:flex; justify-content:space-between; align-items:center;">
         <h2 style="font-size:20px; font-weight:700;">Messages</h2>
-        <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:24px;">✕</div>
+        <div style="display:flex; align-items:center; gap:16px;">
+          <button class="btn-primary" style="padding:6px 16px; font-size:14px;" onclick="openFloraModal()">+ New Flora</button>
+          <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:24px;">✕</div>
+        </div>
       </div>
       <div id="convList" style="flex:1; overflow-y:auto; padding:0;">
         <!-- conversations load here -->
@@ -3257,6 +3260,66 @@
       area.appendChild(wrap);
       area.scrollTop = 99999;
     }
+
+    // --- FLORA FUNCTIONS ---
+    function openFloraModal() {
+      document.getElementById('createFloraModal').style.display = 'flex';
+      document.getElementById('floraNameInput').value = '';
+      document.getElementById('floraDescInput').value = '';
+      const list = document.getElementById('floraMembersList');
+      list.innerHTML = '<div style="color:var(--stone); font-size:14px;">Loading mutuals...</div>';
+      
+      fetch('/api/mutual_followers')
+        .then(r => r.json())
+        .then(mutuals => {
+          list.innerHTML = '';
+          if (mutuals.length === 0) {
+            list.innerHTML = '<div style="color:var(--stone); font-size:14px;">You need mutual followers to create a Flora.</div>';
+          }
+          mutuals.forEach(m => {
+            const row = document.createElement('label');
+            row.style.cssText = 'display:flex; align-items:center; gap:12px; cursor:pointer; padding:8px; border-radius:12px; transition:background 0.2s;';
+            row.onmouseover = () => row.style.background = 'rgba(139,94,60,0.05)';
+            row.onmouseout = () => row.style.background = 'transparent';
+            row.innerHTML = `
+              <input type="checkbox" class="flora-member-cb" value="${m.id}" style="width:18px; height:18px; accent-color:var(--green3);">
+              <div class="mini-avatar" style="width:32px; height:32px;">${m.photo ? `<img src="${m.photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : m.name[0].toUpperCase()}</div>
+              <div style="flex:1;">
+                <div style="font-weight:600; font-size:15px; color:var(--earth1);">${m.name}</div>
+                <div style="font-size:13px; color:var(--stone);">${m.handle}</div>
+              </div>
+            `;
+            list.appendChild(row);
+          });
+        });
+    }
+
+    function closeFloraModal() {
+      document.getElementById('createFloraModal').style.display = 'none';
+    }
+
+    function submitCreateFlora() {
+      const name = document.getElementById('floraNameInput').value.trim();
+      const desc = document.getElementById('floraDescInput').value.trim();
+      if (!name) return showNotif('Flora Name is required', 'error');
+      
+      const cbs = document.querySelectorAll('.flora-member-cb:checked');
+      const members = Array.from(cbs).map(cb => cb.value);
+      
+      fetch('/api/flora', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: name, description: desc, members: members })
+      }).then(r => r.json()).then(data => {
+        if (data.success) {
+          closeFloraModal();
+          showNotif(`Flora '${data.name}' created! 🌿`);
+          openMessages(); 
+        } else {
+          showNotif('Failed to create Flora', 'error');
+        }
+      });
+    }
   </script>
 
   <!-- EDIT POST MODAL -->
@@ -3272,6 +3335,28 @@
         <button onclick="closeEditModal()"
           style="padding:10px 24px; border-radius:20px; border:1px solid rgba(139,94,60,0.2); background:none; cursor:pointer; font-family:inherit; font-size:15px; color:var(--stone);">Cancel</button>
         <button class="btn-primary" onclick="submitEditPost()" style="padding:10px 28px;">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE FLORA MODAL -->
+  <div id="createFloraModal" onclick="if(event.target===this) closeFloraModal()"
+    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:400; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:24px; padding:32px; width:min(420px,90vw); box-shadow:0 24px 64px rgba(0,0,0,0.18); animation:floatUp 0.2s ease-out;">
+      <h2 style="font-family:'Playfair Display',serif; font-size:24px; color:var(--earth1); margin-bottom:24px;">Create a Flora</h2>
+      <input type="text" id="floraNameInput" placeholder="Flora Name" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(139,94,60,0.2); outline:none; font-size:15px; margin-bottom:16px; font-family:inherit;">
+      <textarea id="floraDescInput" placeholder="Description" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(139,94,60,0.2); outline:none; font-size:15px; resize:vertical; min-height:80px; margin-bottom:16px; font-family:inherit;"></textarea>
+      
+      <div style="margin-bottom:16px;">
+        <label style="font-size:14px; font-weight:600; color:var(--stone);">Select Members (Mutuals Only)</label>
+        <div id="floraMembersList" style="max-height:160px; overflow-y:auto; margin-top:12px; display:flex; flex-direction:column; gap:8px;">
+          <!-- mutuals populate here -->
+        </div>
+      </div>
+      
+      <div style="display:flex; gap:12px; margin-top:24px;">
+        <button onclick="closeFloraModal()" style="flex:1; padding:12px; border-radius:20px; border:1px solid rgba(139,94,60,0.2); background:none; cursor:pointer; font-family:inherit; font-size:15px; color:var(--stone);">Cancel</button>
+        <button class="btn-primary" onclick="submitCreateFlora()" style="flex:1; padding:12px 24px;">Create Flora</button>
       </div>
     </div>
   </div>

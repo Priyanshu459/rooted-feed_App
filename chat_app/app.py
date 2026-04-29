@@ -147,6 +147,21 @@ class Message(db.Model):
     timestamp = db.Column(db.BigInteger)
     read = db.Column(db.Boolean, default=False)
 
+flora_members = db.Table('flora_members',
+    db.Column('flora_id', db.String(36), db.ForeignKey('flora.id')),
+    db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
+)
+
+class Flora(db.Model):
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(500))
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    created_at = db.Column(db.BigInteger)
+    
+    creator = db.relationship('User', foreign_keys=[creator_id])
+    members = db.relationship('User', secondary=flora_members, backref=db.backref('floras', lazy='dynamic'), lazy='dynamic')
+
 class Notification(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Owner
@@ -905,6 +920,38 @@ def ai_chat():
         # Show actual error for debugging
         return jsonify({'reply': f'AI Error: {err[:200]}'})
 
+
+@app.route('/api/mutual_followers')
+@login_required
+def get_mutual_followers():
+    followed = current_user.followed.all()
+    followers = current_user.followers.all()
+    mutuals = [u for u in followed if u in followers]
+    return jsonify([{'id': u.id, 'name': u.display_name, 'handle': u.handle, 'photo': u.profile_photo_url} for u in mutuals])
+
+@app.route('/api/flora', methods=['POST'])
+@login_required
+def create_flora():
+    data = request.json
+    name = data.get('name')
+    description = data.get('description', '')
+    member_ids = data.get('members', [])
+    
+    if not name:
+        return jsonify({'error': 'Name is required'}), 400
+        
+    ts = int(time.time() * 1000)
+    flora = Flora(name=name, description=description, creator_id=current_user.id, created_at=ts)
+    db.session.add(flora)
+    
+    flora.members.append(current_user)
+    for m_id in member_ids:
+        user = User.query.get(m_id)
+        if user and current_user.is_following(user) and user.is_following(current_user):
+            flora.members.append(user)
+            
+    db.session.commit()
+    return jsonify({'success': True, 'id': flora.id, 'name': flora.name})
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3001))
