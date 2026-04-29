@@ -260,6 +260,26 @@ def sitemap():
 </urlset>"""
     return xml, 200, {'Content-Type': 'application/xml'}
 
+@app.route('/post/<post_id>')
+def view_post(post_id):
+    """Individual shareable post page with rich Open Graph meta tags for SEO."""
+    post = Post.query.get(post_id)
+    if not post:
+        return redirect(url_for('index'))
+    author = User.query.filter_by(handle=post.handle).first()
+    og_title = f"{post.sender} on Rooted"
+    og_description = post.text[:200] if post.text else "Check out this post on Rooted Feed."
+    og_image = post.media_url if post.media_url else (author.profile_photo_url if author else '')
+    og_url = f"https://rooted-feed.online/post/{post_id}"
+    return render_template('post.html',
+        post=post,
+        author=author,
+        og_title=og_title,
+        og_description=og_description,
+        og_image=og_image,
+        og_url=og_url
+    )
+
 @app.route('/login/google')
 def login_google():
     redirect_uri = url_for('auth_google', _external=True)
