@@ -239,6 +239,61 @@ with app.app_context():
             except Exception as e:
                 print("Index creation note:", e)
 
+    # Universal safe column migrations — works on BOTH PostgreSQL and SQLite
+    # These run every startup but are no-ops if columns/tables already exist
+    with db.engine.begin() as conn:
+        from sqlalchemy import text, inspect
+        inspector = inspect(db.engine)
+
+        # Add cover_photo_url to user table if missing
+        existing_user_cols = [c['name'] for c in inspector.get_columns('user')]
+        if 'cover_photo_url' not in existing_user_cols:
+            try:
+                conn.execute(text("ALTER TABLE \"user\" ADD COLUMN cover_photo_url VARCHAR(200) DEFAULT ''"))
+                print("Migration: Added cover_photo_url to user table.")
+            except Exception as e:
+                print(f"Migration note (cover_photo_url): {e}")
+
+        # Ensure flora and flora_members tables exist
+        existing_tables = inspector.get_table_names()
+        if 'flora' not in existing_tables:
+            try:
+                if db.engine.dialect.name == 'postgresql':
+                    conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS flora (
+                            id VARCHAR(36) NOT NULL PRIMARY KEY,
+                            name VARCHAR(100) NOT NULL,
+                            description VARCHAR(500),
+                            creator_id INTEGER REFERENCES "user" (id),
+                            created_at BIGINT
+                        )
+                    """))
+                else:
+                    conn.execute(text("""
+                        CREATE TABLE IF NOT EXISTS flora (
+                            id VARCHAR(36) NOT NULL PRIMARY KEY,
+                            name VARCHAR(100) NOT NULL,
+                            description VARCHAR(500),
+                            creator_id INTEGER,
+                            created_at BIGINT
+                        )
+                    """))
+                print("Migration: Created flora table.")
+            except Exception as e:
+                print(f"Migration note (flora table): {e}")
+
+        if 'flora_members' not in existing_tables:
+            try:
+                conn.execute(text("""
+                    CREATE TABLE IF NOT EXISTS flora_members (
+                        flora_id VARCHAR(36),
+                        user_id INTEGER
+                    )
+                """))
+                print("Migration: Created flora_members table.")
+            except Exception as e:
+                print(f"Migration note (flora_members table): {e}")
+
 # Enable SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=500*1024*1024, async_mode='eventlet')
 
