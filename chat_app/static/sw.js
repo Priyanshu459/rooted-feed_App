@@ -1,9 +1,9 @@
 // Rooted Feed - Service Worker
 // Caches static assets for offline support and faster loading
 
-const CACHE_NAME = 'rooted-v1';
+const CACHE_NAME = 'rooted-v7';  // ← bump this whenever you deploy HTML changes
 const STATIC_ASSETS = [
-  '/',
+  // NOTE: '/' (HTML) is intentionally NOT cached — always fetch fresh from server
   '/static/manifest.json',
   '/static/favicon.png',
   'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500;700&display=swap',
