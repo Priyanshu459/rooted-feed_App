@@ -1,5 +1,5 @@
-import gevent.monkey
-gevent.monkey.patch_all()
+import eventlet
+eventlet.monkey_patch()
 
 import os
 import uuid
@@ -45,7 +45,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Session/Cookie Security (Fixes MismatchingStateError)
 # On Render, HTTPS is used, but locally HTTP might be used.
-IS_PROD = os.getenv('RENDER') is not None
+IS_PROD = os.getenv('RENDER') is not None or os.getenv('IS_PROD') is not None
 app.config['SESSION_COOKIE_SECURE'] = IS_PROD
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'None' if IS_PROD else 'Lax'
@@ -213,7 +213,7 @@ with app.app_context():
                 print("Migration note:", e)
 
 # Enable SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=500*1024*1024)
+socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=500*1024*1024, async_mode='eventlet')
 
 @app.route('/')
 def index():
