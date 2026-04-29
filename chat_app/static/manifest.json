@@ -4,14 +4,26 @@
   "description": "The internet's most authentic social media platform.",
   "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#FBF7F0",
   "theme_color": "#4A7C59",
+  "lang": "en",
+  "categories": ["social", "news"],
   "icons": [
     {
       "src": "/static/favicon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
+    {
+      "src": "/static/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
     {
       "src": "/static/favicon.png",
       "sizes": "512x512",
