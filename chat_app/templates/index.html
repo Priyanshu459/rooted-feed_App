@@ -1741,13 +1741,7 @@
     <div class="main-feed" id="messagesView" style="display:none; flex-direction:column; background:#fff;">
       <div class="feed-header" style="display:flex; justify-content:space-between; align-items:center;">
         <h2 style="font-size:20px; font-weight:700;">Messages</h2>
-        <div style="display:flex; align-items:center; gap:16px;">
-          <button class="btn-primary" style="padding:6px 16px; font-size:14px;" onclick="openFloraModal()">+ New Flora</button>
-          <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:24px;">✕</div>
-        </div>
-      </div>
-      <div id="floraList" style="padding:0; background:var(--cream); border-bottom:1px solid rgba(139,94,60,0.1);">
-        <!-- floras load here -->
+        <div onclick="switchTab('feedView')" style="cursor:pointer; color:var(--stone); font-size:24px;">✕</div>
       </div>
       <div id="convList" style="flex:1; overflow-y:auto; padding:0;">
         <!-- conversations load here -->
@@ -1777,23 +1771,6 @@
           oninput="handleTypingInput()">
         <button class="btn-primary" style="padding:0 24px; border-radius:24px; font-weight:600;"
           onclick="sendDM()">Send</button>
-      </div>
-    </div>
-
-    <!-- FLORA PROFILE VIEW -->
-    <div class="main-feed" id="floraProfileView" style="display:none; flex-direction:column; background:#fff;">
-      <div class="feed-header" style="display:flex; align-items:center; gap:12px; padding:12px 24px;">
-        <div onclick="openMessages()" style="cursor:pointer; color:var(--stone); font-size:24px;">←</div>
-        <h2 style="font-size:20px; font-weight:700;">Flora Profile</h2>
-      </div>
-      <div style="padding:32px 24px; text-align:center; border-bottom:1px solid rgba(139,94,60,0.1);">
-        <div style="width:80px;height:80px;border-radius:50%;background:var(--green3);color:#fff;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;margin:0 auto 16px auto;">🌿</div>
-        <h1 id="fpName" style="font-size:28px; margin-bottom:8px; color:var(--earth1);"></h1>
-        <p id="fpDesc" style="color:var(--stone); margin-bottom:0; font-size:15px;"></p>
-      </div>
-      <div style="padding:24px;">
-        <h3 style="margin-bottom:16px; font-size:14px; font-weight:700; color:var(--stone); text-transform:uppercase; letter-spacing:1px;">Members</h3>
-        <div id="fpMembers" style="display:flex; flex-direction:column; gap:12px;"></div>
       </div>
     </div>
 
@@ -2451,7 +2428,7 @@
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       if (event && event.currentTarget) event.currentTarget.classList.add('active');
 
-      const allViews = ['feedView', 'exploreView', 'aiView', 'profileView', 'messagesView', 'chatView', 'notificationsView', 'threadView', 'floraProfileView'];
+      const allViews = ['feedView', 'exploreView', 'aiView', 'profileView', 'messagesView', 'chatView', 'notificationsView', 'threadView'];
       allViews.forEach(v => {
         const el = document.getElementById(v);
         if (el) el.style.display = 'none';
@@ -2844,41 +2821,7 @@
     }
 
     function fetchConversations() {
-      // Fetch floras first (use cache-buster to ensure real-time updates)
-      fetch(`/api/my_floras?t=${Date.now()}`)
-        .then(r => r.json())
-        .then(floras => {
-          console.log('[Flora] my_floras response:', floras);
-          const fl = document.getElementById('floraList');
-          fl.innerHTML = '';
-          if (!Array.isArray(floras)) {
-            console.warn('[Flora] my_floras returned non-array:', floras);
-            return;
-          }
-          if (floras.length > 0) {
-            const header = document.createElement('div');
-            header.style.cssText = 'padding:12px 24px; font-size:12px; font-weight:700; color:var(--stone); text-transform:uppercase; letter-spacing:1px;';
-            header.textContent = 'My Floras';
-            fl.appendChild(header);
-            
-            floras.forEach(f => {
-              const item = document.createElement('div');
-              item.className = 'conv-item';
-              item.onclick = () => openFloraProfile(f);
-              item.innerHTML = `
-                <div style="width:48px;height:48px;border-radius:50%;background:var(--green3);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;flex-shrink:0;">🌿</div>
-                <div style="flex:1;">
-                    <div style="font-weight:700; color:var(--earth1);">${f.name}</div>
-                    <div style="font-size:13px; color:var(--stone); margin-top:2px;">${f.members.length} members</div>
-                </div>
-              `;
-              fl.appendChild(item);
-            });
-          }
-        })
-        .catch(err => console.error('[Flora] my_floras fetch error:', err));
-
-      fetch(`/api/conversations?t=${Date.now()}`)
+      fetch('/api/conversations')
         .then(r => r.json())
         .then(convs => {
           const cl = document.getElementById('convList');
@@ -3002,12 +2945,6 @@
       if (!text || !currentChatTarget) return;
 
       socket.emit('send_message', { target_handle: currentChatTarget, text: text });
-      
-      // OPTIMISTIC UI UPDATE
-      appendChatMessage({ text: text, is_me: true });
-      const area = document.getElementById('chatMessages');
-      area.scrollTop = area.scrollHeight;
-
       input.value = '';
     }
 
@@ -3019,19 +2956,15 @@
 
     // Socket handler for DMs
     socket.on('receive_message', function (msg) {
-      const isMe = msg.sender_handle === currentUser.handle;
-      
-      // Ignore our own messages since we optimistically append them in sendDM
-      if (isMe) return;
-
-      if (currentChatTarget && msg.sender_handle === currentChatTarget) {
-        appendChatMessage({ text: msg.text, is_me: false });
+      const isMe = msg.sender_id === currentUser.id;
+      if (currentChatTarget && ((isMe && msg.target_handle === currentChatTarget) || (!isMe && msg.sender_handle === currentChatTarget))) {
+        appendChatMessage({ text: msg.text, is_me: isMe });
         const area = document.getElementById('chatMessages');
         area.scrollTop = area.scrollHeight;
-        fetch(`/api/messages/${msg.sender_handle}`); // Mark read implicitly
+        if (!isMe) fetch(`/api/messages/${msg.sender_handle}`); // Mark read implicitly
       } else {
         fetchConversations(); // update badge
-        showNotif(`New message from ${msg.sender_name}`);
+        if (!isMe) showNotif(`New message from ${msg.sender_name}`);
       }
     });
 
@@ -3324,113 +3257,6 @@
       area.appendChild(wrap);
       area.scrollTop = 99999;
     }
-
-    // --- FLORA FUNCTIONS ---
-    function openFloraModal() {
-      console.log('[Flora] openFloraModal called');
-      document.getElementById('createFloraModal').style.display = 'flex';
-      document.getElementById('floraNameInput').value = '';
-      document.getElementById('floraDescInput').value = '';
-      const list = document.getElementById('floraMembersList');
-      list.innerHTML = '<div style="color:var(--stone); font-size:14px;">Loading mutuals...</div>';
-      
-      fetch(`/api/mutual_followers?t=${Date.now()}`)
-        .then(r => {
-          console.log('[Flora] mutual_followers status:', r.status);
-          return r.json();
-        })
-        .then(mutuals => {
-          console.log('[Flora] mutuals received:', mutuals);
-          list.innerHTML = '';
-          if (!Array.isArray(mutuals)) {
-            list.innerHTML = `<div style="color:red; font-size:13px;">Error loading mutuals: ${JSON.stringify(mutuals)}</div>`;
-            return;
-          }
-          if (mutuals.length === 0) {
-            list.innerHTML = '<div style="color:var(--stone); font-size:14px;">No mutual followers yet. Follow people and have them follow you back!</div>';
-          }
-          mutuals.forEach(m => {
-            const row = document.createElement('label');
-            row.style.cssText = 'display:flex; align-items:center; gap:12px; cursor:pointer; padding:8px; border-radius:12px; transition:background 0.2s;';
-            row.onmouseover = () => row.style.background = 'rgba(139,94,60,0.05)';
-            row.onmouseout = () => row.style.background = 'transparent';
-            row.innerHTML = `
-              <input type="checkbox" class="flora-member-cb" value="${m.id}" style="width:18px; height:18px; accent-color:var(--green3);">
-              <div class="mini-avatar" style="width:32px; height:32px;">${m.photo ? `<img src="${m.photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : m.name[0].toUpperCase()}</div>
-              <div style="flex:1;">
-                <div style="font-weight:600; font-size:15px; color:var(--earth1);">${m.name}</div>
-                <div style="font-size:13px; color:var(--stone);">${m.handle}</div>
-              </div>
-            `;
-            list.appendChild(row);
-          });
-        })
-        .catch(err => {
-          console.error('[Flora] mutual_followers fetch error:', err);
-          list.innerHTML = `<div style="color:red;">Network error: ${err.message}</div>`;
-        });
-    }
-
-    function openFloraProfile(f) {
-      switchTab('floraProfileView');
-      document.getElementById('fpName').textContent = f.name;
-      document.getElementById('fpDesc').textContent = f.description || 'No description provided.';
-      
-      const ml = document.getElementById('fpMembers');
-      ml.innerHTML = '';
-      f.members.forEach(m => {
-        const item = document.createElement('div');
-        item.style.cssText = 'display:flex; align-items:center; gap:12px; cursor:pointer; padding:8px; border-radius:12px; transition:background 0.2s;';
-        item.onmouseover = () => item.style.background = 'rgba(139,94,60,0.05)';
-        item.onmouseout = () => item.style.background = 'transparent';
-        item.onclick = () => openProfile(m.handle, m.name);
-        item.innerHTML = `
-          <div class="mini-avatar" style="width:40px; height:40px;">${m.photo ? `<img src="${m.photo}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">` : m.name[0].toUpperCase()}</div>
-          <div style="flex:1;">
-            <div style="font-weight:600; font-size:15px; color:var(--earth1);">${m.name}</div>
-            <div style="font-size:13px; color:var(--stone);">${m.handle}</div>
-          </div>
-        `;
-        ml.appendChild(item);
-      });
-    }
-
-    function closeFloraModal() {
-      document.getElementById('createFloraModal').style.display = 'none';
-    }
-
-    function submitCreateFlora() {
-      const name = document.getElementById('floraNameInput').value.trim();
-      const desc = document.getElementById('floraDescInput').value.trim();
-      if (!name) return showNotif('Flora Name is required', 'error');
-      
-      const cbs = document.querySelectorAll('.flora-member-cb:checked');
-      const members = Array.from(cbs).map(cb => cb.value);
-      console.log('[Flora] submitting:', { name, desc, members });
-      
-      fetch('/api/flora', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ name: name, description: desc, members: members })
-      })
-      .then(r => {
-        console.log('[Flora] create response status:', r.status);
-        return r.json();
-      })
-      .then(data => {
-        console.log('[Flora] create response data:', data);
-        if (data.success) {
-          closeFloraModal();
-          showNotif(`Flora '${data.name}' created! 🌿`);
-          openMessages();
-        } else {
-          showNotif(`Failed: ${data.error || 'Unknown error'}`, 'error');
-        }
-      }).catch(err => {
-        console.error('[Flora] create fetch error:', err);
-        showNotif('Network error while creating Flora', 'error');
-      });
-    }
   </script>
 
   <!-- EDIT POST MODAL -->
@@ -3446,34 +3272,6 @@
         <button onclick="closeEditModal()"
           style="padding:10px 24px; border-radius:20px; border:1px solid rgba(139,94,60,0.2); background:none; cursor:pointer; font-family:inherit; font-size:15px; color:var(--stone);">Cancel</button>
         <button class="btn-primary" onclick="submitEditPost()" style="padding:10px 28px;">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- CREATE FLORA MODAL -->
-  <div id="createFloraModal"
-    style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:500; align-items:flex-start; justify-content:center; padding:24px 16px; overflow-y:auto;"
-    onclick="closeFloraModal()">
-    <div style="background:#fff; border-radius:24px; padding:28px; width:min(420px,100%); box-shadow:0 24px 64px rgba(0,0,0,0.2); margin:auto; position:relative;"
-      onclick="event.stopPropagation()">
-      <button onclick="closeFloraModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:20px; cursor:pointer; color:var(--stone); line-height:1;">&times;</button>
-      <h2 style="font-family:'Playfair Display',serif; font-size:22px; color:var(--earth1); margin-bottom:20px; padding-right:32px;">&#127807; Create a Flora</h2>
-      <input type="text" id="floraNameInput" placeholder="Flora Name *"
-        style="width:100%; padding:14px; border-radius:12px; border:1.5px solid rgba(139,94,60,0.25); outline:none; font-size:16px; margin-bottom:14px; font-family:inherit; box-sizing:border-box; -webkit-appearance:none;"
-        autocomplete="off">
-      <textarea id="floraDescInput" placeholder="Description (optional)"
-        style="width:100%; padding:14px; border-radius:12px; border:1.5px solid rgba(139,94,60,0.25); outline:none; font-size:16px; resize:vertical; min-height:70px; margin-bottom:14px; font-family:inherit; box-sizing:border-box; -webkit-appearance:none;"></textarea>
-      
-      <div style="margin-bottom:20px;">
-        <label style="font-size:13px; font-weight:700; color:var(--stone); text-transform:uppercase; letter-spacing:0.5px;">Select Members (Mutuals Only)</label>
-        <div id="floraMembersList" style="max-height:180px; overflow-y:auto; margin-top:10px; display:flex; flex-direction:column; gap:6px; border:1px solid rgba(139,94,60,0.1); border-radius:12px; padding:8px;">
-          <!-- mutuals populate here -->
-        </div>
-      </div>
-      
-      <div style="display:flex; gap:12px;">
-        <button onclick="closeFloraModal()" style="flex:1; padding:14px; border-radius:20px; border:1px solid rgba(139,94,60,0.2); background:none; cursor:pointer; font-family:inherit; font-size:15px; color:var(--stone);">Cancel</button>
-        <button class="btn-primary" onclick="submitCreateFlora()" style="flex:2; padding:14px; font-size:15px; font-weight:700;">&#10003; Create Flora</button>
       </div>
     </div>
   </div>

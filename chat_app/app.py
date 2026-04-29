@@ -147,21 +147,6 @@ class Message(db.Model):
     timestamp = db.Column(db.BigInteger)
     read = db.Column(db.Boolean, default=False)
 
-flora_members = db.Table('flora_members',
-    db.Column('flora_id', db.String(36), db.ForeignKey('flora.id')),
-    db.Column('user_id', db.Integer, db.ForeignKey('user.id'))
-)
-
-class Flora(db.Model):
-    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.String(500))
-    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_at = db.Column(db.BigInteger)
-    
-    creator = db.relationship('User', foreign_keys=[creator_id])
-    members = db.relationship('User', secondary=flora_members, backref=db.backref('floras', lazy='dynamic'), lazy='dynamic')
-
 class Notification(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False) # Owner
@@ -212,97 +197,32 @@ class PostLike(db.Model):
     post_id = db.Column(db.String(50), db.ForeignKey('post.id'), primary_key=True)
 
 with app.app_context():
-    try:
-        db.create_all()
-    except Exception as e:
-        print(f"db.create_all() note: {e}")
-
-    # PostgreSQL-specific migrations (BIGINT columns + indexes)
-    try:
-        if db.engine.dialect.name == 'postgresql':
+    db.create_all()
+    
+    # Automatic migration for PostgreSQL to fix timestamp DataError
+    if db.engine.dialect.name == 'postgresql':
+        with db.engine.begin() as conn:
             from sqlalchemy import text
-            with db.engine.begin() as conn:
-                for stmt in [
-                    'ALTER TABLE post ALTER COLUMN timestamp TYPE BIGINT',
-                    'ALTER TABLE notification ALTER COLUMN timestamp TYPE BIGINT',
-                    'ALTER TABLE message ALTER COLUMN timestamp TYPE BIGINT',
-                    'ALTER TABLE conversation ALTER COLUMN updated_at TYPE BIGINT',
-                    'CREATE INDEX IF NOT EXISTS idx_post_timestamp ON post (timestamp DESC)',
-                    'CREATE INDEX IF NOT EXISTS idx_post_node ON post (node)',
-                    'CREATE INDEX IF NOT EXISTS idx_post_parent_id ON post (parent_id)',
-                    'CREATE INDEX IF NOT EXISTS idx_post_handle ON post (handle)',
-                    'CREATE INDEX IF NOT EXISTS idx_notification_user_id ON notification (user_id)',
-                    'CREATE INDEX IF NOT EXISTS idx_notification_timestamp ON notification (timestamp DESC)',
-                    'CREATE INDEX IF NOT EXISTS idx_message_conv_id ON message (conversation_id)',
-                ]:
-                    try:
-                        conn.execute(text(stmt))
-                    except Exception:
-                        pass
-    except Exception as e:
-        print(f"PostgreSQL migration note: {e}")
-
-    # Universal safe schema migrations — safe on both PostgreSQL and SQLite
-    try:
-        from sqlalchemy import text, inspect as sa_inspect
-        inspector = sa_inspect(db.engine)
-
-        # Add cover_photo_url column if missing
-        try:
-            existing_cols = [c['name'] for c in inspector.get_columns('user')]
-            if 'cover_photo_url' not in existing_cols:
-                with db.engine.begin() as conn:
-                    conn.execute(text("ALTER TABLE \"user\" ADD COLUMN cover_photo_url VARCHAR(200) DEFAULT ''"))
-                print("Migration: Added cover_photo_url to user table.")
-        except Exception as e:
-            print(f"Migration note (cover_photo_url): {e}")
-
-        # Create flora table if missing
-        try:
-            existing_tables = inspector.get_table_names()
-            if 'flora' not in existing_tables:
-                with db.engine.begin() as conn:
-                    if db.engine.dialect.name == 'postgresql':
-                        conn.execute(text("""
-                            CREATE TABLE IF NOT EXISTS flora (
-                                id VARCHAR(36) NOT NULL PRIMARY KEY,
-                                name VARCHAR(100) NOT NULL,
-                                description VARCHAR(500),
-                                creator_id INTEGER REFERENCES "user" (id),
-                                created_at BIGINT
-                            )
-                        """))
-                    else:
-                        conn.execute(text("""
-                            CREATE TABLE IF NOT EXISTS flora (
-                                id VARCHAR(36) NOT NULL PRIMARY KEY,
-                                name VARCHAR(100) NOT NULL,
-                                description VARCHAR(500),
-                                creator_id INTEGER,
-                                created_at BIGINT
-                            )
-                        """))
-                print("Migration: Created flora table.")
-        except Exception as e:
-            print(f"Migration note (flora table): {e}")
-
-        # Create flora_members table if missing
-        try:
-            existing_tables2 = sa_inspect(db.engine).get_table_names()
-            if 'flora_members' not in existing_tables2:
-                with db.engine.begin() as conn:
-                    conn.execute(text("""
-                        CREATE TABLE IF NOT EXISTS flora_members (
-                            flora_id VARCHAR(36),
-                            user_id INTEGER
-                        )
-                    """))
-                print("Migration: Created flora_members table.")
-        except Exception as e:
-            print(f"Migration note (flora_members table): {e}")
-
-    except Exception as e:
-        print(f"Universal migration error (non-fatal): {e}")
+            # Alter columns to BIGINT so they can hold JavaScript millisecond timestamps
+            try:
+                conn.execute(text('ALTER TABLE post ALTER COLUMN timestamp TYPE BIGINT'))
+                conn.execute(text('ALTER TABLE notification ALTER COLUMN timestamp TYPE BIGINT'))
+                conn.execute(text('ALTER TABLE message ALTER COLUMN timestamp TYPE BIGINT'))
+                conn.execute(text('ALTER TABLE conversation ALTER COLUMN updated_at TYPE BIGINT'))
+            except Exception as e:
+                print("Migration note:", e)
+                
+            # Performance Optimization: Create Indexes for fast querying
+            try:
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_timestamp ON post (timestamp DESC)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_node ON post (node)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_parent_id ON post (parent_id)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_post_handle ON post (handle)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_notification_user_id ON notification (user_id)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_notification_timestamp ON notification (timestamp DESC)'))
+                conn.execute(text('CREATE INDEX IF NOT EXISTS idx_message_conv_id ON message (conversation_id)'))
+            except Exception as e:
+                print("Index creation note:", e)
 
 # Enable SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", max_http_buffer_size=500*1024*1024, async_mode='eventlet')
@@ -985,119 +905,6 @@ def ai_chat():
         # Show actual error for debugging
         return jsonify({'reply': f'AI Error: {err[:200]}'})
 
-
-@app.route('/api/mutual_followers')
-@login_required
-def get_mutual_followers():
-    try:
-        followed = current_user.followed.all()
-        followers_list = current_user.followers.all()
-        mutuals = [u for u in followed if u in followers_list]
-        return jsonify([{'id': u.id, 'name': u.display_name, 'handle': u.handle, 'photo': u.profile_photo_url} for u in mutuals])
-    except Exception as e:
-        print(f'[Flora] mutual_followers error: {e}')
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/flora/debug')
-@login_required
-def debug_flora():
-    """Debug endpoint to diagnose Flora issues live."""
-    try:
-        from sqlalchemy import text, inspect
-        inspector = inspect(db.engine)
-        tables = inspector.get_table_names()
-        user_cols = [c['name'] for c in inspector.get_columns('user')]
-        flora_tables = [t for t in tables if 'flora' in t]
-        
-        flora_count = 0
-        flora_member_count = 0
-        if 'flora' in tables:
-            flora_count = Flora.query.count()
-        if 'flora_members' in tables:
-            with db.engine.connect() as conn:
-                flora_member_count = conn.execute(text('SELECT COUNT(*) FROM flora_members')).scalar()
-        
-        user_flora_count = 0
-        try:
-            user_flora_count = current_user.floras.count()
-        except Exception as ue:
-            user_flora_count = f'error: {ue}'
-
-        return jsonify({
-            'status': 'ok',
-            'db_dialect': db.engine.dialect.name,
-            'tables': tables,
-            'flora_related_tables': flora_tables,
-            'user_columns': user_cols,
-            'has_cover_photo_url': 'cover_photo_url' in user_cols,
-            'total_floras': flora_count,
-            'total_flora_members': flora_member_count,
-            'current_user_id': current_user.id,
-            'current_user_handle': current_user.handle,
-            'current_user_flora_count': user_flora_count
-        })
-    except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
-
-@app.route('/api/flora', methods=['POST'])
-@login_required
-def create_flora():
-    try:
-        data = request.json
-        name = data.get('name')
-        description = data.get('description', '')
-        member_ids = data.get('members', [])
-        
-        if not name:
-            return jsonify({'error': 'Name is required'}), 400
-            
-        ts = int(time.time() * 1000)
-        flora = Flora(name=name, description=description, creator_id=current_user.id, created_at=ts)
-        db.session.add(flora)
-        db.session.flush()  # ensure flora.id is set before appending members
-        
-        flora.members.append(current_user)
-        followed_list = current_user.followed.all()
-        followers_list = current_user.followers.all()
-        
-        for m_id in member_ids:
-            try:
-                m_id_int = int(m_id)
-            except (ValueError, TypeError):
-                continue
-            user = User.query.get(m_id_int)
-            if user and user in followed_list and user in followers_list:
-                flora.members.append(user)
-                
-        db.session.commit()
-        print(f'[Flora] Created flora "{name}" for {current_user.handle}')
-        return jsonify({'success': True, 'id': flora.id, 'name': flora.name})
-    except Exception as e:
-        db.session.rollback()
-        print(f'[Flora] create_flora error: {e}')
-        return jsonify({'error': str(e), 'success': False}), 500
-
-@app.route('/api/my_floras')
-@login_required
-def get_my_floras():
-    try:
-        floras = current_user.floras.order_by(Flora.created_at.desc()).all()
-        res = []
-        for f in floras:
-            members_list = f.members.all()  # explicitly call .all() on dynamic relationship
-            members = [{'id': u.id, 'name': u.display_name, 'handle': u.handle, 'photo': u.profile_photo_url} for u in members_list]
-            res.append({
-                'id': f.id,
-                'name': f.name,
-                'description': f.description,
-                'created_at': f.created_at,
-                'members': members,
-                'creator_id': f.creator_id
-            })
-        return jsonify(res)
-    except Exception as e:
-        print(f'[Flora] get_my_floras error: {e}')
-        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 3001))
