@@ -42,8 +42,8 @@ dependencies {
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     
     // Image Caching
-    implementation 'github.com.bumptech.glide:glide:4.15.1'
-    annotationProcessor 'github.com.bumptech.glide:compiler:4.15.1'
+    implementation 'com.github.bumptech.glide:glide:4.15.1'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.15.1'
 
     // Real-time (Socket.IO)
     implementation ('io.socket:socket.io-client:2.1.0') {

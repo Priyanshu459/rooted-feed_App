@@ -53,6 +53,16 @@
                     android:scheme="https" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="online.rooted_feed.chat.ConversationActivity"
+            android:exported="false"
+            android:label="Messages"
+            android:theme="@style/Theme.RootedFeed" />
+        <activity
+            android:name="online.rooted_feed.chat.ChatActivity"
+            android:exported="false"
+            android:label="Chat"
+            android:theme="@style/Theme.RootedFeed" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"

@@ -1,0 +1,25 @@
+# Android
+.gradle
+/local.properties
+/.idea
+.idea/
+.DS_Store
+/build
+/app/build
+*.iml
+.cxx
+
+# Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+
+# Kotlin
+bin/
+gen/
+
+# Misc
+*.log
+.DS_Store

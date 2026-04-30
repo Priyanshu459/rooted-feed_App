@@ -6,6 +6,10 @@
     <color name="rooted_green">#4A7C59</color>
     <color name="stone_gray">#7A6B5A</color>
     <color name="white">#FFFFFF</color>
+    <style name="CircleImageView" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
     <style name="Theme.RootedFeed" parent="Theme.MaterialComponents.Light.NoActionBar">
         
         <item name="colorPrimary">@color/rooted_green</item>
