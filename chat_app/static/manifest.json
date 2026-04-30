@@ -1,33 +1,42 @@
 {
   "name": "Rooted Feed",
   "short_name": "Rooted",
-  "description": "The internet's most authentic social media platform.",
+  "description": "The internet's most authentic nature-inspired social media platform.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FBF7F0",
   "theme_color": "#4A7C59",
   "lang": "en",
-  "categories": ["social", "news"],
+  "categories": ["social", "nature", "community"],
   "icons": [
     {
-      "src": "/static/favicon.png",
+      "src": "/static/icon.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/static/favicon.png",
+      "src": "/static/icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ],
   "screenshots": [
     {
-      "src": "/static/favicon.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/static/screenshot.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Rooted Feed Desktop View"
+    },
+    {
+      "src": "/static/screenshot.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Rooted Feed Mobile View"
     }
   ]
 }

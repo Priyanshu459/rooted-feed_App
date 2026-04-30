@@ -1,0 +1,19 @@
+R_DEF: Internal format may change without notice
+local
+color black
+color earth_brown
+color rooted_cream
+color rooted_green
+color stone_gray
+color white
+drawable splash_background
+id offlineView
+id progressBar
+id retryButton
+id swipeRefresh
+id webView
+layout activity_main
+mipmap ic_launcher
+mipmap ic_launcher_round
+style Theme.RootedFeed
+style Theme.RootedFeed.Splash

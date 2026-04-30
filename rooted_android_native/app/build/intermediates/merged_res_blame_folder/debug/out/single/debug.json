@@ -1,0 +1,50 @@
+[
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-xhdpi_ic_launcher.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-xhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-hdpi_ic_launcher_round.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-hdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-xhdpi_ic_launcher_round.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-xhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/drawable_splash_background.xml.flat",
+        "source": "online.rooted_feed.app-main-31:/drawable/splash_background.xml"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-mdpi_ic_launcher.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/layout_activity_main.xml.flat",
+        "source": "online.rooted_feed.app-main-31:/layout/activity_main.xml"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-xxhdpi_ic_launcher_round.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-xxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-xxhdpi_ic_launcher.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-xxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-xxxhdpi_ic_launcher.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-xxxhdpi/ic_launcher.png"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-mdpi_ic_launcher_round.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-mdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-xxxhdpi_ic_launcher_round.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-xxxhdpi/ic_launcher_round.png"
+    },
+    {
+        "merged": "online.rooted_feed.app-merged_res-29:/mipmap-hdpi_ic_launcher.png.flat",
+        "source": "online.rooted_feed.app-main-31:/mipmap-hdpi/ic_launcher.png"
+    }
+]

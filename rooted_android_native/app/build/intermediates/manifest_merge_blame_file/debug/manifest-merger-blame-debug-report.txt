@@ -1,0 +1,121 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="online.rooted_feed"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+8-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml
+9        android:targetSdkVersion="33" />
+9-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:5:5-67
+11-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:5:22-64
+12
+13    <permission
+13-->[androidx.core:core:1.10.1] C:\Users\priya\.gradle\caches\transforms-3\c9ebfcf3cee176d89367108cb8f07b44\transformed\core-1.10.1\AndroidManifest.xml:22:5-24:47
+14        android:name="online.rooted_feed.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+14-->[androidx.core:core:1.10.1] C:\Users\priya\.gradle\caches\transforms-3\c9ebfcf3cee176d89367108cb8f07b44\transformed\core-1.10.1\AndroidManifest.xml:23:9-81
+15        android:protectionLevel="signature" />
+15-->[androidx.core:core:1.10.1] C:\Users\priya\.gradle\caches\transforms-3\c9ebfcf3cee176d89367108cb8f07b44\transformed\core-1.10.1\AndroidManifest.xml:24:9-44
+16
+17    <uses-permission android:name="online.rooted_feed.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+17-->[androidx.core:core:1.10.1] C:\Users\priya\.gradle\caches\transforms-3\c9ebfcf3cee176d89367108cb8f07b44\transformed\core-1.10.1\AndroidManifest.xml:26:5-97
+17-->[androidx.core:core:1.10.1] C:\Users\priya\.gradle\caches\transforms-3\c9ebfcf3cee176d89367108cb8f07b44\transformed\core-1.10.1\AndroidManifest.xml:26:22-94
+18
+19    <application
+19-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:7:5-35:19
+20        android:allowBackup="true"
+20-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:8:9-35
+21        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+21-->[androidx.core:core:1.10.1] C:\Users\priya\.gradle\caches\transforms-3\c9ebfcf3cee176d89367108cb8f07b44\transformed\core-1.10.1\AndroidManifest.xml:28:18-86
+22        android:debuggable="true"
+23        android:extractNativeLibs="false"
+24        android:icon="@mipmap/ic_launcher"
+24-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:9:9-43
+25        android:label="Rooted Feed"
+25-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:10:9-36
+26        android:roundIcon="@mipmap/ic_launcher_round"
+26-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:11:9-54
+27        android:supportsRtl="true"
+27-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:12:9-35
+28        android:testOnly="true"
+29        android:theme="@style/Theme.RootedFeed.Splash" >
+29-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:13:9-55
+30        <activity
+30-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:15:9-33:20
+31            android:name="online.rooted_feed.MainActivity"
+31-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:16:13-41
+32            android:configChanges="orientation|screenSize|keyboardHidden"
+32-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:18:13-74
+33            android:exported="true"
+33-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:17:13-36
+34            android:launchMode="singleTask" > <!-- singleTask helps with intent handling -->
+34-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:19:13-44
+35            <intent-filter>
+35-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:20:13-23:29
+36                <action android:name="android.intent.action.MAIN" />
+36-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:21:17-69
+36-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:21:25-66
+37
+38                <category android:name="android.intent.category.LAUNCHER" />
+38-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:22:17-77
+38-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:22:27-74
+39            </intent-filter>
+40
+41            <!-- Deep Linking for rooted-feed.online -->
+42            <intent-filter android:autoVerify="true" >
+42-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:26:13-32:29
+42-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:26:28-53
+43                <action android:name="android.intent.action.VIEW" />
+43-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:27:17-69
+43-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:27:25-66
+44
+45                <category android:name="android.intent.category.DEFAULT" />
+45-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:28:17-76
+45-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:28:27-73
+46                <category android:name="android.intent.category.BROWSABLE" />
+46-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:29:17-78
+46-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:29:27-75
+47
+48                <data
+48-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:30:17-86
+49                    android:host="www.rooted-feed.online"
+49-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:30:46-83
+50                    android:scheme="https" />
+50-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:30:23-45
+51                <data
+51-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:30:17-86
+52                    android:host="rooted-feed.online"
+52-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:30:46-83
+53                    android:scheme="https" />
+53-->C:\Users\priya\OneDrive\Documents\rooted-feed_App\rooted_android_native\app\src\main\AndroidManifest.xml:30:23-45
+54            </intent-filter>
+55        </activity>
+56
+57        <provider
+57-->[androidx.emoji2:emoji2:1.2.0] C:\Users\priya\.gradle\caches\transforms-3\a99977571ee3cd18aa8282f901b4f376\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:24:9-32:20
+58            android:name="androidx.startup.InitializationProvider"
+58-->[androidx.emoji2:emoji2:1.2.0] C:\Users\priya\.gradle\caches\transforms-3\a99977571ee3cd18aa8282f901b4f376\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:25:13-67
+59            android:authorities="online.rooted_feed.androidx-startup"
+59-->[androidx.emoji2:emoji2:1.2.0] C:\Users\priya\.gradle\caches\transforms-3\a99977571ee3cd18aa8282f901b4f376\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:26:13-68
+60            android:exported="false" >
+60-->[androidx.emoji2:emoji2:1.2.0] C:\Users\priya\.gradle\caches\transforms-3\a99977571ee3cd18aa8282f901b4f376\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:27:13-37
+61            <meta-data
+61-->[androidx.emoji2:emoji2:1.2.0] C:\Users\priya\.gradle\caches\transforms-3\a99977571ee3cd18aa8282f901b4f376\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:29:13-31:52
+62                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+62-->[androidx.emoji2:emoji2:1.2.0] C:\Users\priya\.gradle\caches\transforms-3\a99977571ee3cd18aa8282f901b4f376\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:30:17-75
+63                android:value="androidx.startup" />
+63-->[androidx.emoji2:emoji2:1.2.0] C:\Users\priya\.gradle\caches\transforms-3\a99977571ee3cd18aa8282f901b4f376\transformed\jetified-emoji2-1.2.0\AndroidManifest.xml:31:17-49
+64            <meta-data
+64-->[androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\priya\.gradle\caches\transforms-3\ee6169da390c11e0062552454bc81b7f\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:31:13-33:52
+65                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+65-->[androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\priya\.gradle\caches\transforms-3\ee6169da390c11e0062552454bc81b7f\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:32:17-78
+66                android:value="androidx.startup" />
+66-->[androidx.lifecycle:lifecycle-process:2.4.1] C:\Users\priya\.gradle\caches\transforms-3\ee6169da390c11e0062552454bc81b7f\transformed\jetified-lifecycle-process-2.4.1\AndroidManifest.xml:33:17-49
+67        </provider>
+68    </application>
+69
+70</manifest>

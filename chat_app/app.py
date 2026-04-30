@@ -888,9 +888,30 @@ def handle_join(user_data):
         
     # Sort algorithmically
     visible_posts.sort(key=get_score, reverse=True)
-    # Send top 100 as a batch
-    batch = [post_to_dict(p, viewer_id) for p in visible_posts[:100]]
+    # Send top 50 as initial batch
+    batch = [post_to_dict(p, viewer_id) for p in visible_posts[:50]]
     emit('initial_posts', batch)
+
+@socketio.on('load_more')
+def handle_load_more(data):
+    """Cursor-based infinite scroll for the feed."""
+    before_ts = data.get('before')
+    node = data.get('node', 'All')
+    limit = data.get('limit', 20)
+    
+    query = Post.query.filter(Post.parent_id == None)
+    
+    if before_ts:
+        query = query.filter(Post.timestamp < before_ts)
+    
+    if node != 'All' and node != 'For You':
+        query = query.filter(Post.node == node)
+        
+    posts = query.order_by(Post.timestamp.desc()).limit(limit).all()
+    
+    viewer_id = current_user.id if current_user.is_authenticated else None
+    batch = [post_to_dict(p, viewer_id) for p in posts]
+    emit('more_posts', batch)
 
 @socketio.on('create_post')
 def handle_create_post(data):

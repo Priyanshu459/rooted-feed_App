@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:ns1="http://schemas.android.com/tools">
+    <color name="black">#000000</color>
+    <color name="earth_brown">#2D1B0E</color>
+    <color name="rooted_cream">#FBF7F0</color>
+    <color name="rooted_green">#4A7C59</color>
+    <color name="stone_gray">#7A6B5A</color>
+    <color name="white">#FFFFFF</color>
+    <style name="Theme.RootedFeed" parent="Theme.MaterialComponents.Light.NoActionBar">
+        
+        <item name="colorPrimary">@color/rooted_green</item>
+        <item name="colorPrimaryVariant">@color/rooted_green</item>
+        <item name="colorOnPrimary">@color/white</item>
+        
+        <item name="android:statusBarColor">@color/rooted_green</item>
+        
+        <item name="android:navigationBarColor">@color/rooted_cream</item>
+        <item name="android:windowLightNavigationBar" ns1:targetApi="o_mr1">true</item>
+    </style>
+    <style name="Theme.RootedFeed.Splash" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash_background</item>
+        <item name="android:statusBarColor">@color/rooted_green</item>
+        <item name="android:navigationBarColor">@color/rooted_green</item>
+    </style>
+</resources>
